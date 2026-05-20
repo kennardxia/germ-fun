@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sky War 2D — germ.fun</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #020a1a; font-family: 'Plus Jakarta Sans', sans-serif; }
+    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+    .screen {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(2,10,26,0.92); backdrop-filter: blur(10px); gap: 14px;
+    }
+    .screen.hidden { display: none; }
+    .screen h1 { font-size: clamp(36px,6vw,58px); font-weight: 800; letter-spacing: -0.04em; color: #fff; }
+    .screen h1 span { color: #38bdf8; }
+    .screen p  { font-size: 15px; color: rgba(255,255,255,0.5); }
+
+    .controls-info {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      max-width: 480px; width: 100%; padding: 16px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+    }
+    .ctrl-col { display: flex; flex-direction: column; gap: 6px; }
+    .ctrl-player { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .ctrl-line { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .key { background: rgba(255,255,255,0.1); border-radius: 4px; padding: 1px 5px; font-family: monospace; }
+
+    .btn-row { display: flex; gap: 10px; }
+    button {
+      font-family: inherit; cursor: pointer; border: none; border-radius: 12px;
+      padding: 13px 32px; font-size: 15px; font-weight: 700; transition: all 0.2s ease;
+    }
+    .btn-primary { background: #38bdf8; color: #000; }
+    .btn-primary:hover { background: #7dd3fc; transform: scale(1.04); }
+    .btn-secondary { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #fff; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+    .back-link { position: fixed; top: 16px; left: 20px; font-size: 12px; color: rgba(255,255,255,0.3); text-decoration: none; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; z-index: 50; transition: color 0.2s; }
+    .back-link:hover { color: rgba(255,255,255,0.7); }
+
+    #hud {
+      position: fixed; top: 12px; left: 0; right: 0; pointer-events: none; z-index: 5;
+      display: flex; justify-content: space-between; align-items: flex-start; padding: 0 16px;
+      gap: 8px;
+    }
+    .hud-panel {
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px;
+    }
+    .hud-panel.hidden { display: none; }
+    .p-lives { display: flex; gap: 4px; }
+    .heart { font-size: 14px; }
+    .p-name { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .p-hp-bar { width: 100px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+    .p-hp-fill { height: 100%; border-radius: 3px; transition: width 0.15s ease; }
+    #hud-score-mid { text-align: center; }
+    .hud-score-txt { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: #fff; }
+    #hud-timer { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    #round-end {
+      position: fixed; inset: 0; z-index: 20;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(2,10,26,0.9); backdrop-filter: blur(12px); gap: 14px;
+    }
+    #round-end.hidden { display: none; }
+    #winner { font-size: 52px; font-weight: 800; letter-spacing: -0.04em; }
+    #fps { position: fixed; bottom: 8px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.2); font-family: monospace; pointer-events: none; }
+  </style>
+</head>
+<body>
+<a href="../" class="back-link">← germ.fun</a>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="hud-panel">
+    <div class="p-name" style="color:#38bdf8">Player 1</div>
+    <div class="p-lives" id="p1-lives">❤️❤️❤️</div>
+    <div class="p-hp-bar"><div class="p-hp-fill" id="p1-hp" style="background:#38bdf8;width:100%"></div></div>
+  </div>
+  <div class="hud-panel" id="hud-score-mid">
+    <div class="hud-score-txt"><span id="s1">0</span> – <span id="s2">0</span></div>
+    <div id="hud-timer">2:00</div>
+  </div>
+  <div class="hud-panel">
+    <div class="p-name" style="color:#f97316;text-align:right">Player 2</div>
+    <div class="p-lives" id="p2-lives" style="flex-direction:row-reverse">❤️❤️❤️</div>
+    <div class="p-hp-bar"><div class="p-hp-fill" id="p2-hp" style="background:#f97316;width:100%"></div></div>
+  </div>
+</div>
+
+<div id="round-end" class="hidden">
+  <div id="winner" style="color:#fff">Draw!</div>
+  <div style="font-size:18px;color:rgba(255,255,255,0.5)">Final: <span id="fs1">0</span> – <span id="fs2">0</span></div>
+  <div class="btn-row">
+    <button class="btn-primary" id="btn-rematch">Rematch</button>
+    <button class="btn-secondary" id="btn-to-menu">Menu</button>
+  </div>
+</div>
+
+<!-- MENU -->
+<div class="screen" id="menu">
+  <h1>Sky War <span>2D</span></h1>
+  <p>Side-scrolling aerial combat. Siapa yang jatuh duluan?</p>
+  <div class="controls-info">
+    <div class="ctrl-col">
+      <div class="ctrl-player" style="color:#38bdf8">Player 1</div>
+      <div class="ctrl-line"><span class="key">W</span> Thrust  <span class="key">S</span> Brake</div>
+      <div class="ctrl-line"><span class="key">A</span><span class="key">D</span> Rotate</div>
+      <div class="ctrl-line"><span class="key">Space</span> Shoot</div>
+    </div>
+    <div class="ctrl-col">
+      <div class="ctrl-player" style="color:#f97316">Player 2</div>
+      <div class="ctrl-line"><span class="key">↑</span> Thrust  <span class="key">↓</span> Brake</div>
+      <div class="ctrl-line"><span class="key">←</span><span class="key">→</span> Rotate</div>
+      <div class="ctrl-line"><span class="key">Ctrl</span> Shoot</div>
+    </div>
+  </div>
+  <button class="btn-primary" id="btn-start">Start Game</button>
+</div>
+
+<div id="fps">0 fps</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+// ─── RESIZE ───────────────────────────────────
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── KEYS ─────────────────────────────────────
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  keys.add(e.code);
+  if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if (e.code === 'Escape') { if (running) toggleMenu(); }
+});
+window.addEventListener('keyup', e => keys.delete(e.code));
+
+// ─── PLANE DEFINITION ─────────────────────────
+const PLANES = [
+  { color:'#38bdf8', hp:100, speed:220, turnRate:3.2, fireRate:8,  dmg:10 },
+  { color:'#f97316', hp:100, speed:220, turnRate:3.2, fireRate:8,  dmg:10 },
+];
+
+// ─── GAME STATE ───────────────────────────────
+const W = () => canvas.width,  H = () => canvas.height;
+const ARENA_PADDING = 60;
+
+class Plane {
+  constructor(def, playerIdx) {
+    this.def   = def;
+    this.idx   = playerIdx;
+    this.color = def.color;
+    this.reset();
+  }
+  reset() {
+    const margin = 80;
+    this.x = this.idx === 0 ? margin + W() * 0.15 : W() - margin - W() * 0.15;
+    this.y = H() / 2 + (Math.random() - 0.5) * 80;
+    this.angle = this.idx === 0 ? 0 : Math.PI;
+    this.vx = 0; this.vy = 0;
+    this.speed = 0;
+    this.hp = this.def.hp;
+    this.maxHp = this.def.hp;
+    this.fireCd = 0;
+    this.alive = true;
+    this.respawnTimer = 0;
+    this.flashTimer = 0;
+    this.score = 0;
+  }
+}
+
+// bullets
+const bullets = [];
+// particles
+const particles = [];
+// stars bg
+const stars = Array.from({ length: 120 }, () => ({
+  x: Math.random(), y: Math.random(),
+  r: 0.5 + Math.random() * 1.5,
+  speed: 0.1 + Math.random() * 0.4,
+  alpha: 0.2 + Math.random() * 0.6,
+}));
+// clouds
+const clouds = Array.from({ length: 8 }, () => ({
+  x: Math.random(),
+  y: 0.1 + Math.random() * 0.8,
+  w: 80 + Math.random() * 120,
+  speed: 20 + Math.random() * 30,
+  alpha: 0.05 + Math.random() * 0.08,
+}));
+
+let planes = [], running = false, paused = false;
+let roundTime = 120;
+let lastT = 0, fpsTimer = 0, fpsCount = 0;
+
+function spawnBullet(owner) {
+  const angle = owner.angle;
+  bullets.push({
+    x: owner.x + Math.cos(angle) * 18,
+    y: owner.y + Math.sin(angle) * 18,
+    vx: Math.cos(angle) * 480 + owner.vx,
+    vy: Math.sin(angle) * 480 + owner.vy,
+    owner: owner.idx,
+    color: owner.color,
+    life: 0,
+    maxLife: 1.8,
+  });
+}
+
+function emitExplosion(x, y, color, count = 16) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 40 + Math.random() * 180;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      color, life: 0,
+      maxLife: 0.4 + Math.random() * 0.6,
+      r: 2 + Math.random() * 4,
+    });
+  }
+}
+
+function initRound() {
+  planes = PLANES.map((def, i) => new Plane(def, i));
+  bullets.length = 0;
+  particles.length = 0;
+  roundTime = 120;
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('round-end').classList.add('hidden');
+  document.getElementById('menu').classList.add('hidden');
+  running = true;
+  lastT = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function endRound() {
+  running = false;
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('round-end').classList.remove('hidden');
+  const s1 = planes[0].score, s2 = planes[1].score;
+  document.getElementById('fs1').textContent = s1;
+  document.getElementById('fs2').textContent = s2;
+  const winEl = document.getElementById('winner');
+  if (s1 > s2)      { winEl.textContent = 'Player 1 Wins! 🏆'; winEl.style.color = '#38bdf8'; }
+  else if (s2 > s1) { winEl.textContent = 'Player 2 Wins! 🏆'; winEl.style.color = '#f97316'; }
+  else              { winEl.textContent = 'Draw! 🤝';           winEl.style.color = '#ffd700'; }
+}
+
+function toggleMenu() {
+  paused = !paused;
+  document.getElementById('menu').classList.toggle('hidden', !paused);
+}
+
+// ─── UPDATE ───────────────────────────────────
+function update(dt) {
+  const W_ = W(), H_ = H();
+
+  // Clouds
+  clouds.forEach(cl => {
+    cl.x -= cl.speed * dt / W_;
+    if (cl.x < -cl.w / W_) cl.x = 1 + cl.w / W_;
+  });
+
+  planes.forEach(p => {
+    if (!p.alive) {
+      p.respawnTimer -= dt;
+      if (p.respawnTimer <= 0) {
+        p.alive = true;
+        p.hp = p.maxHp;
+        p.x = p.idx === 0 ? W_ * 0.2 : W_ * 0.8;
+        p.y = H_ / 2 + (Math.random() - 0.5) * 100;
+        p.vx = p.vy = 0;
+        p.speed = 0;
+        emitExplosion(p.x, p.y, '#ffffff', 10);
+      }
+      return;
+    }
+    if (p.flashTimer > 0) p.flashTimer -= dt;
+
+    const inp = p.idx === 0
+      ? { thrust: keys.has('KeyW'), brake: keys.has('KeyS'), left: keys.has('KeyA'), right: keys.has('KeyD'), fire: keys.has('Space') }
+      : { thrust: keys.has('ArrowUp'), brake: keys.has('ArrowDown'), left: keys.has('ArrowLeft'), right: keys.has('ArrowRight'), fire: keys.has('ControlLeft') || keys.has('ControlRight') };
+
+    if (inp.left)  p.angle -= p.def.turnRate * dt;
+    if (inp.right) p.angle += p.def.turnRate * dt;
+
+    if (inp.thrust) p.speed = Math.min(p.speed + 280 * dt, p.def.speed);
+    else if (inp.brake) p.speed = Math.max(p.speed - 220 * dt, 0);
+    else p.speed *= (1 - 1.5 * dt);
+
+    p.vx = Math.cos(p.angle) * p.speed;
+    p.vy = Math.sin(p.angle) * p.speed;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    // Screen wrap
+    if (p.x < 0)  p.x = W_;
+    if (p.x > W_) p.x = 0;
+    if (p.y < 0)  p.y = H_;
+    if (p.y > H_) p.y = 0;
+
+    p.fireCd = Math.max(0, p.fireCd - dt);
+    if (inp.fire && p.fireCd <= 0) {
+      spawnBullet(p);
+      p.fireCd = 1 / p.def.fireRate;
+    }
+  });
+
+  // Bullets
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.life += dt;
+    // Wrap
+    if (b.x < 0) b.x = W_; if (b.x > W_) b.x = 0;
+    if (b.y < 0) b.y = H_; if (b.y > H_) b.y = 0;
+
+    if (b.life >= b.maxLife) { bullets.splice(i, 1); continue; }
+
+    // Hit test
+    for (const p of planes) {
+      if (!p.alive || p.idx === b.owner) continue;
+      if (Math.hypot(b.x - p.x, b.y - p.y) < 16) {
+        p.hp -= 10;
+        p.flashTimer = 0.15;
+        emitExplosion(b.x, b.y, b.color, 6);
+        bullets.splice(i, 1);
+        if (p.hp <= 0) killPlane(p, b.owner);
+        break;
+      }
+    }
+  }
+
+  // Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= (1 - 3 * dt);
+    p.vy *= (1 - 3 * dt);
+    p.life += dt;
+    if (p.life >= p.maxLife) particles.splice(i, 1);
+  }
+
+  // Timer
+  roundTime -= dt;
+  const sec = Math.max(0, roundTime);
+  const m = Math.floor(sec / 60).toString().padStart(2,'0');
+  const s = Math.floor(sec % 60).toString().padStart(2,'0');
+  document.getElementById('hud-timer').textContent = `${m}:${s}`;
+  if (roundTime <= 0) { endRound(); return; }
+
+  // HUD hp bars
+  planes.forEach((p, i) => {
+    const fill = document.getElementById(`p${i+1}-hp`);
+    if (fill) fill.style.width = Math.max(0, p.hp / p.maxHp * 100) + '%';
+  });
+}
+
+function killPlane(p, killerIdx) {
+  p.alive = false;
+  p.respawnTimer = 3;
+  emitExplosion(p.x, p.y, p.color, 30);
+  const killer = planes.find(pl => pl.idx === killerIdx);
+  if (killer) {
+    killer.score++;
+    document.getElementById(`s${killerIdx + 1}`).textContent = killer.score;
+  }
+  // Lives display (3 emoji hearts, dim killed ones)
+  const livesEl = document.getElementById(`p${p.idx+1}-lives`);
+  if (livesEl) {
+    const count = Math.max(0, Math.floor(p.hp / p.maxHp * 3));
+    livesEl.innerHTML = '❤️'.repeat(Math.max(0, 3 - (planes[p.idx].score ?? 0)));
+  }
+}
+
+// ─── DRAW ─────────────────────────────────────
+function draw() {
+  const W_ = W(), H_ = H();
+  ctx.clearRect(0, 0, W_, H_);
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, H_);
+  bg.addColorStop(0, '#020a18');
+  bg.addColorStop(1, '#041530');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W_, H_);
+
+  // Stars
+  stars.forEach(s => {
+    ctx.globalAlpha = s.alpha;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x * W_, s.y * H_, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Clouds
+  clouds.forEach(cl => {
+    ctx.globalAlpha = cl.alpha;
+    const grd = ctx.createRadialGradient(cl.x * W_, cl.y * H_, 0, cl.x * W_, cl.y * H_, cl.w);
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.ellipse(cl.x * W_, cl.y * H_, cl.w, cl.w * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Particles
+  particles.forEach(p => {
+    const t = 1 - p.life / p.maxLife;
+    ctx.globalAlpha = t * 0.9;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * t, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Bullets
+  bullets.forEach(b => {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(Math.atan2(b.vy, b.vx));
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = b.color;
+    ctx.shadowBlur  = 8;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 10, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+  ctx.shadowBlur = 0;
+
+  // Planes
+  planes.forEach(p => {
+    if (!p.alive) return;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+
+    const flashing = p.flashTimer > 0 && Math.floor(p.flashTimer * 20) % 2 === 0;
+    if (flashing) { ctx.globalAlpha = 0.3; }
+
+    // Engine glow
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur  = 20;
+
+    // Body
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.moveTo(22, 0);
+    ctx.lineTo(-14, -6);
+    ctx.lineTo(-10, 0);
+    ctx.lineTo(-14, 6);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    // Wings
+    ctx.fillStyle = p.color + '99';
+    ctx.beginPath();
+    ctx.moveTo(4, 0);
+    ctx.lineTo(-10, -22);
+    ctx.lineTo(-14, -8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(4, 0);
+    ctx.lineTo(-10, 22);
+    ctx.lineTo(-14, 8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cockpit
+    ctx.fillStyle = '#ffffff44';
+    ctx.beginPath();
+    ctx.ellipse(8, 0, 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Exhaust
+    ctx.fillStyle = '#ff8c00cc';
+    const exhaust = 4 + Math.random() * 8;
+    ctx.beginPath();
+    ctx.moveTo(-12, 0);
+    ctx.lineTo(-12 - exhaust, -3);
+    ctx.lineTo(-12 - exhaust * 0.5, 0);
+    ctx.lineTo(-12 - exhaust, 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    // Name label above
+    ctx.font = '10px Plus Jakarta Sans';
+    ctx.fillStyle = p.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(`P${p.idx + 1}`, p.x, p.y - 28);
+  });
+}
+
+// ─── LOOP ─────────────────────────────────────
+function loop(now) {
+  if (!running) return;
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  if (paused) { draw(); return; }
+
+  fpsCount++; fpsTimer += dt;
+  if (fpsTimer >= 0.5) {
+    document.getElementById('fps').textContent = Math.round(fpsCount / fpsTimer) + ' fps';
+    fpsTimer = 0; fpsCount = 0;
+  }
+
+  update(dt);
+  draw();
+}
+
+// ─── UI WIRING ────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', initRound);
+document.getElementById('btn-rematch').addEventListener('click', () => {
+  planes.forEach(p => { p.score = 0; });
+  initRound();
+});
+document.getElementById('btn-to-menu').addEventListener('click', () => {
+  document.getElementById('round-end').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  running = false;
+});
+</script>
+</body>
+</html>

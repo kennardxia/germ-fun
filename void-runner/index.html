@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Void Runner — germ.fun</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { width:100%; height:100%; overflow:hidden; background:#030303; font-family:'Plus Jakarta Sans',sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+    .badge { font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:99px; padding:4px 12px; }
+    h1 { font-size:clamp(40px,8vw,72px); font-weight:800; letter-spacing:-0.05em; color:#fff; }
+    h1 span { color:#6366f1; }
+    p { font-size:15px; color:rgba(255,255,255,0.4); text-align:center; max-width:360px; }
+    .<span class="tag t-3d">3D</span><span class="tag t-solo">Solo</span> { display:flex; gap:8px; }
+    .tag { font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; letter-spacing:0.04em; text-transform:uppercase; }
+    .t-3d { background:#1a2a3a; color:#38bdf8; }
+    .t-2d { background:#1a2a1a; color:#86efac; }
+    .t-pvp { background:#2a1a2a; color:#f0abfc; }
+    .t-solo { background:#2a2a1a; color:#fde68a; }
+    a { font-size:13px; color:rgba(255,255,255,0.3); text-decoration:none; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin-top:8px; transition:color 0.2s; }
+    a:hover { color:rgba(255,255,255,0.7); }
+    .progress-bar { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+    .progress-fill { height:100%; background:#6366f1; border-radius:2px; width:40%; }
+    canvas { position:fixed; inset:0; z-index:-1; }
+  </style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="badge">Coming Soon</div>
+<h1>Void <span>Runner</span></h1>
+<div class="<span class="tag t-3d">3D</span><span class="tag t-solo">Solo</span>"><span class="tag t-3d">3D</span><span class="tag t-solo">Solo</span></div>
+<p>Infinite neon tunnel. Dodge obstacles. Go faster. Survive.</p>
+<div class="progress-bar"><div class="progress-fill"></div></div>
+<a href="../">← Back to germ.fun</a>
+<script>
+const c=document.getElementById('bg'),ctx=c.getContext('2d');
+function resize(){c.width=innerWidth;c.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+const pts=[];
+for(let i=0;i<50;i++)pts.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0003,vy:(Math.random()-.5)*.0003,r:1+Math.random()*2,a:.05+Math.random()*.15});
+function draw(){
+  requestAnimationFrame(draw);
+  ctx.fillStyle='rgba(3,3,3,0.12)';ctx.fillRect(0,0,c.width,c.height);
+  pts.forEach(p=>{p.x=(p.x+p.vx+1)%1;p.y=(p.y+p.vy+1)%1;ctx.globalAlpha=p.a;ctx.fillStyle='#6366f1';ctx.beginPath();ctx.arc(p.x*c.width,p.y*c.height,p.r,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+}
+draw();
+</script>
+</body>
+</html>

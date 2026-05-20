@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravity Switch — germ.fun</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body { width:100%; height:100%; overflow:hidden; background:#050a05; font-family:'Plus Jakarta Sans',sans-serif; }
+    canvas { display:block; width:100%; height:100%; }
+
+    .screen {
+      position:fixed; inset:0; z-index:10;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:rgba(5,10,5,0.94); backdrop-filter:blur(12px); gap:14px;
+    }
+    .screen.hidden { display:none; }
+    .screen h1 { font-size:clamp(36px,6vw,58px); font-weight:800; letter-spacing:-0.04em; color:#fff; }
+    .screen h1 span { color:#facc15; }
+    .screen p { font-size:14px; color:rgba(255,255,255,0.5); text-align:center; max-width:320px; }
+    .big-score { font-size:64px; font-weight:800; letter-spacing:-0.05em; color:#facc15; }
+    .sub-txt { font-size:14px; color:rgba(255,255,255,0.4); }
+    button { font-family:inherit; cursor:pointer; border:none; border-radius:11px; padding:12px 32px; font-size:15px; font-weight:700; transition:all 0.2s; }
+    .btn-p { background:#facc15; color:#000; }
+    .btn-p:hover { background:#fde047; transform:scale(1.04); }
+    .btn-s { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; }
+    .btn-s:hover { background:rgba(255,255,255,0.14); }
+    .ctrl-box { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 24px; font-size:13px; color:rgba(255,255,255,0.5); text-align:center; }
+    .key { background:rgba(255,255,255,0.1); border-radius:3px; padding:1px 6px; font-family:monospace; }
+    .back-link { position:fixed; top:16px; left:20px; font-size:11px; color:rgba(255,255,255,0.3); text-decoration:none; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; z-index:50; transition:color 0.2s; }
+    .back-link:hover { color:rgba(255,255,255,0.7); }
+
+    #hud { position:fixed; top:0; left:0; right:0; pointer-events:none; z-index:5; display:flex; justify-content:space-between; align-items:center; padding:12px 20px; }
+    .hud-score { font-size:32px; font-weight:800; letter-spacing:-0.04em; color:#facc15; }
+    .hud-best  { font-size:12px; color:rgba(255,255,255,0.3); }
+    .hud-dist  { font-size:13px; color:rgba(255,255,255,0.45); }
+
+    #dead-screen {
+      position:fixed; inset:0; z-index:20;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:rgba(5,10,5,0.88); backdrop-filter:blur(14px); gap:12px;
+    }
+    #dead-screen.hidden { display:none; }
+    #fps { position:fixed; bottom:8px; right:10px; font-size:10px; color:rgba(255,255,255,0.2); font-family:monospace; pointer-events:none; }
+  </style>
+</head>
+<body>
+<a href="../" class="back-link">← germ.fun</a>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div>
+    <div class="hud-best" id="hud-best">Best: 0</div>
+    <div class="hud-score" id="hud-score">0</div>
+  </div>
+  <div class="hud-dist" id="hud-dist">0m</div>
+</div>
+
+<div id="dead-screen" class="hidden">
+  <div style="font-size:20px;color:rgba(255,255,255,0.4)">Score</div>
+  <div class="big-score" id="d-score">0</div>
+  <div class="sub-txt" id="d-best">Best: 0</div>
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn-p" id="btn-retry">Retry</button>
+    <button class="btn-s" id="btn-d-menu">Menu</button>
+  </div>
+</div>
+
+<div class="screen" id="menu">
+  <h1>Gravity <span>Switch</span></h1>
+  <p>Tekan tombol untuk balik gravitasi. Hindari semua rintangan.</p>
+  <div class="ctrl-box">
+    <span class="key">Space</span> atau <span class="key">↑</span> — Flip Gravity
+  </div>
+  <p style="font-size:12px;color:rgba(255,255,255,0.3)">Tap layar juga bisa</p>
+  <button class="btn-p" id="btn-start">Start</button>
+</div>
+
+<div id="fps">0 fps</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', () => { resize(); if (running) rebuildTunnel(); });
+canvas.addEventListener('click', () => { if (running && !dead) flipGravity(); });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); if (running && !dead) flipGravity(); }, { passive:false });
+
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  const prev = keys.has(e.code);
+  keys.add(e.code);
+  if (!prev && (e.code === 'Space' || e.code === 'ArrowUp') && running && !dead) {
+    e.preventDefault();
+    flipGravity();
+  }
+  if (e.code === 'Space') e.preventDefault();
+});
+window.addEventListener('keyup', e => keys.delete(e.code));
+
+const W = () => canvas.width, H = () => canvas.height;
+
+// ── GAME CONFIG ─────────────────────────────────
+const PLAYER_SIZE = 18;
+const GRAVITY     = 1600;
+const INITIAL_SPEED = 220;
+const SPEED_INCR    = 12; // px/s per second
+const TUNNEL_HEIGHT_FACTOR = 0.45; // tunnel height = H * factor
+const MIN_GAP       = 90; // minimum gap between top/bottom spikes at any column
+
+// ── STATE ────────────────────────────────────────
+let player, worldX, speed, gravDir, score, hiScore = 0, dead, running, lastT;
+let fpsCount = 0, fpsTimer = 0;
+let blocks = []; // { x, topH, botH, passed }
+let bgLayers = []; // parallax background bars
+let particles = [];
+let jumpParticles = [];
+
+function initGame() {
+  const h = H();
+  const tunnelH   = h * TUNNEL_HEIGHT_FACTOR;
+  const tunnelTop = (h - tunnelH) / 2;
+  const tunnelBot = tunnelTop + tunnelH;
+
+  player = {
+    x: W() * 0.2,
+    y: tunnelTop + tunnelH * 0.3,
+    vy: 0,
+    alive: true,
+  };
+  worldX    = 0;
+  speed     = INITIAL_SPEED;
+  gravDir   = 1; // 1 = fall down, -1 = fall up
+  score     = 0;
+  dead      = false;
+  blocks    = [];
+  particles = [];
+  jumpParticles = [];
+
+  // Generate initial blocks
+  rebuildTunnel();
+
+  bgLayers = Array.from({ length: 3 }, (_, i) => ({
+    color: `rgba(${20 + i * 10},${30 + i * 8},${10 + i * 6},${0.3 + i * 0.15})`,
+    speed: (i + 1) * 0.3,
+    stripes: Array.from({ length: 20 }, (__, j) => ({ x: j * (W() / 10 + 20) })),
+  }));
+}
+
+const BLOCK_W = 60, BLOCK_GAP = 36;
+
+function rebuildTunnel() {
+  blocks = [];
+  const h = H();
+  const tunnelH   = h * TUNNEL_HEIGHT_FACTOR;
+  const tunnelTop = (h - tunnelH) / 2;
+  const tunnelBot = tunnelTop + tunnelH;
+  const startX = W() * 0.4;
+
+  let bx = startX;
+  while (bx < W() + 400) {
+    blocks.push(makeBlock(bx, tunnelTop, tunnelBot, tunnelH));
+    bx += BLOCK_W + BLOCK_GAP;
+  }
+}
+
+function makeBlock(x, tunnelTop, tunnelBot, tunnelH) {
+  // Random gap position within tunnel
+  const gapH  = Math.max(MIN_GAP, tunnelH * 0.55 - Math.min(score * 0.3, tunnelH * 0.3));
+  const gapY  = tunnelTop + Math.random() * (tunnelH - gapH);
+  return {
+    x,
+    topH:  gapY, // height of top spike (from top of screen)
+    gapY,        // top of opening
+    gapH,        // opening height
+    botY:  gapY + gapH, // bottom of opening
+    passed: false,
+    color: '#facc15',
+  };
+}
+
+function flipGravity() {
+  gravDir = -gravDir;
+  player.vy = gravDir * -300; // initial flip impulse
+
+  // Flip particles
+  for (let i = 0; i < 8; i++) {
+    const a = Math.random() * Math.PI * 2;
+    jumpParticles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*80, vy: (Math.random()-0.5)*80 + gravDir * -100, life:0, maxLife:0.4 });
+  }
+}
+
+function update(dt) {
+  if (dead) return;
+
+  const h = H();
+  const tunnelH   = h * TUNNEL_HEIGHT_FACTOR;
+  const tunnelTop = (h - tunnelH) / 2;
+  const tunnelBot = tunnelTop + tunnelH;
+
+  speed     += SPEED_INCR * dt;
+  worldX    += speed * dt;
+  score      = Math.floor(worldX / 100);
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hud-dist').textContent  = score + 'm';
+
+  // Player physics
+  player.vy += GRAVITY * gravDir * dt;
+  player.y  += player.vy * dt;
+
+  // Clamp to tunnel
+  if (player.y < tunnelTop + PLAYER_SIZE / 2) {
+    player.y  = tunnelTop + PLAYER_SIZE / 2;
+    player.vy = 0;
+    if (gravDir === -1) { /* hit ceiling while falling up = reset */ }
+  }
+  if (player.y > tunnelBot - PLAYER_SIZE / 2) {
+    player.y  = tunnelBot - PLAYER_SIZE / 2;
+    player.vy = 0;
+  }
+
+  // Tunnel walls = instant death
+  if (player.y <= tunnelTop || player.y >= tunnelBot) die();
+
+  // Block update & collision
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const b = blocks[i];
+    const bx = b.x - worldX + W() * 0.2;
+
+    // Off screen left — remove
+    if (bx < -100) {
+      blocks.splice(i, 1);
+      // Spawn new block at far right
+      const lastBx = blocks.length > 0
+        ? (blocks[blocks.length - 1].x - worldX + W() * 0.2)
+        : W();
+      const newX = worldX + lastBx + BLOCK_W + BLOCK_GAP + W() * 0.8;
+      blocks.push(makeBlock(newX, tunnelTop, tunnelBot, tunnelH));
+      continue;
+    }
+
+    // Score point
+    if (!b.passed && bx < W() * 0.2 - BLOCK_W) {
+      b.passed = true;
+    }
+
+    // Collision (player rectangle vs block rectangle with gap)
+    const px = player.x, py = player.y, pr = PLAYER_SIZE / 2;
+    // Top spike: from 0 to b.topH
+    if (px + pr > bx && px - pr < bx + BLOCK_W) {
+      if (py - pr < b.topH || py + pr > b.botY) die();
+    }
+  }
+
+  // Jump particles
+  for (let i = jumpParticles.length - 1; i >= 0; i--) {
+    const p = jumpParticles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.life += dt;
+    if (p.life >= p.maxLife) jumpParticles.splice(i, 1);
+  }
+
+  // Bg parallax
+  bgLayers.forEach(layer => {
+    layer.stripes.forEach(s => {
+      s.x -= speed * layer.speed * dt;
+      if (s.x < -60) s.x += W() + 60;
+    });
+  });
+}
+
+function die() {
+  dead = true;
+  running = false;
+  if (score > hiScore) hiScore = score;
+
+  // Explosion particles
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 60 + Math.random() * 180;
+    particles.push({ x: player.x, y: player.y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life:0, maxLife:0.5+Math.random()*0.5, r:3+Math.random()*5 });
+  }
+
+  // Delay death screen
+  setTimeout(() => {
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('dead-screen').classList.remove('hidden');
+    document.getElementById('d-score').textContent = score;
+    document.getElementById('d-best').textContent  = 'Best: ' + hiScore;
+    document.getElementById('hud-best').textContent = 'Best: ' + hiScore;
+  }, 600);
+}
+
+// ── DRAW ─────────────────────────────────────────
+function draw() {
+  const w = W(), h = H();
+  const tunnelH   = h * TUNNEL_HEIGHT_FACTOR;
+  const tunnelTop = (h - tunnelH) / 2;
+  const tunnelBot = tunnelTop + tunnelH;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#040804';
+  ctx.fillRect(0, 0, w, h);
+
+  // Bg parallax stripes
+  bgLayers.forEach(layer => {
+    ctx.fillStyle = layer.color;
+    layer.stripes.forEach(s => {
+      ctx.fillRect(s.x, tunnelTop, 30, tunnelH);
+    });
+  });
+
+  // Tunnel walls (solid)
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, tunnelTop);
+  wallGrad.addColorStop(0, '#0a1205');
+  wallGrad.addColorStop(1, '#1a2a0a');
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(0, 0, w, tunnelTop);
+
+  const wallGrad2 = ctx.createLinearGradient(0, tunnelBot, 0, h);
+  wallGrad2.addColorStop(0, '#1a2a0a');
+  wallGrad2.addColorStop(1, '#0a1205');
+  ctx.fillStyle = wallGrad2;
+  ctx.fillRect(0, tunnelBot, w, h - tunnelBot);
+
+  // Tunnel edge lines
+  ctx.strokeStyle = '#facc1544';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, tunnelTop); ctx.lineTo(w, tunnelTop); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, tunnelBot); ctx.lineTo(w, tunnelBot); ctx.stroke();
+
+  // Spike blocks
+  blocks.forEach(b => {
+    const bx = b.x - worldX + w * 0.2;
+    if (bx > w + 60 || bx < -60) return;
+
+    // Top spike (from tunnel top to gapY)
+    if (b.topH > tunnelTop) {
+      ctx.fillStyle = '#facc15';
+      ctx.shadowColor = '#facc1588';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(bx, tunnelTop, BLOCK_W, b.topH - tunnelTop);
+    }
+
+    // Bottom spike (from botY to tunnel bot)
+    if (b.botY < tunnelBot) {
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(bx, b.botY, BLOCK_W, tunnelBot - b.botY);
+    }
+
+    // Gap highlight (inner edge glow)
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(250,204,21,0.12)';
+    ctx.fillRect(bx, b.gapY, BLOCK_W, b.gapH);
+
+    // Warning strips on edges
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(bx, b.topH - 3, BLOCK_W, 3);
+    ctx.fillRect(bx, b.botY, BLOCK_W, 3);
+  });
+  ctx.shadowBlur = 0;
+
+  // Jump particles
+  jumpParticles.forEach(p => {
+    const t = 1 - p.life / p.maxLife;
+    ctx.globalAlpha = t * 0.7;
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Death particles
+  particles.forEach(p => {
+    const t = 1 - p.life / p.maxLife;
+    ctx.globalAlpha = t;
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+    p.x += p.vx * 0.016; p.y += p.vy * 0.016; p.life += 0.016;
+  });
+  ctx.globalAlpha = 1;
+
+  // Player
+  if (!dead) {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(gravDir === -1 ? Math.PI : 0);
+    ctx.fillStyle = '#facc15';
+    ctx.shadowColor = '#facc15';
+    ctx.shadowBlur = 16;
+    // Triangle pointing in gravity direction
+    ctx.beginPath();
+    ctx.moveTo(0, -PLAYER_SIZE / 2);
+    ctx.lineTo(PLAYER_SIZE / 2, PLAYER_SIZE / 2);
+    ctx.lineTo(0, PLAYER_SIZE / 3);
+    ctx.lineTo(-PLAYER_SIZE / 2, PLAYER_SIZE / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Trail
+    ctx.strokeStyle = 'rgba(250,204,21,0.3)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(player.x - 5, player.y);
+    ctx.lineTo(player.x - 30, player.y);
+    ctx.stroke();
+  }
+
+  // Score
+  if (!dead) {
+    ctx.font = 'bold 14px Plus Jakarta Sans';
+    ctx.fillStyle = 'rgba(250,204,21,0.6)';
+    ctx.textAlign = 'left';
+  }
+}
+
+function loop(now) {
+  if (!running && !dead) return;
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+
+  fpsCount++; fpsTimer += dt;
+  if (fpsTimer >= 0.5) {
+    document.getElementById('fps').textContent = Math.round(fpsCount / fpsTimer) + ' fps';
+    fpsTimer = 0; fpsCount = 0;
+  }
+
+  if (running && !dead) update(dt);
+
+  // Update death particles even after death
+  if (dead) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * dt; p.y += p.vy * dt; p.life += dt;
+      p.vx *= (1 - 4 * dt); p.vy *= (1 - 4 * dt);
+      if (p.life >= p.maxLife) particles.splice(i, 1);
+    }
+  }
+
+  draw();
+}
+
+function startGame() {
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('dead-screen').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  initGame();
+  running = true;
+  lastT = performance.now();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-retry').addEventListener('click', startGame);
+document.getElementById('btn-d-menu').addEventListener('click', () => {
+  document.getElementById('dead-screen').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  running = false;
+});
+</script>
+</body>
+</html>

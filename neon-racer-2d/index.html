@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Racer — germ.fun</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width:100%; height:100%; overflow:hidden; background:#050510; font-family:'Plus Jakarta Sans',sans-serif; }
+    canvas { display:block; width:100%; height:100%; }
+
+    .screen {
+      position:fixed; inset:0; z-index:10;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:rgba(5,5,16,0.93); backdrop-filter:blur(12px); gap:14px;
+    }
+    .screen.hidden { display:none; }
+    .screen h1 { font-size:clamp(36px,6vw,58px); font-weight:800; letter-spacing:-0.04em; color:#fff; }
+    .screen h1 span { color:#f97316; }
+    .screen p { font-size:14px; color:rgba(255,255,255,0.45); }
+
+    .ctrl-box {
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+      max-width:440px; width:100%; padding:14px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px;
+    }
+    .ctrl-col { display:flex; flex-direction:column; gap:5px; }
+    .ctrl-player { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+    .ctrl-line { font-size:12px; color:rgba(255,255,255,0.45); }
+    .key { background:rgba(255,255,255,0.1); border-radius:3px; padding:1px 5px; font-family:monospace; }
+
+    button { font-family:inherit; cursor:pointer; border:none; border-radius:11px; padding:12px 30px; font-size:14px; font-weight:700; transition:all 0.2s; }
+    .btn-p { background:#f97316; color:#000; }
+    .btn-p:hover { background:#fb923c; transform:scale(1.04); }
+    .btn-s { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; }
+    .btn-s:hover { background:rgba(255,255,255,0.14); }
+    .back-link { position:fixed; top:16px; left:20px; font-size:11px; color:rgba(255,255,255,0.3); text-decoration:none; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; z-index:50; transition:color 0.2s; }
+    .back-link:hover { color:rgba(255,255,255,0.7); }
+
+    #hud { position:fixed; top:12px; left:0; right:0; pointer-events:none; z-index:5; display:flex; justify-content:space-between; padding:0 14px; }
+    .hud-card { background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 12px; min-width:130px; }
+    .hud-card.center { text-align:center; }
+    .hud-name { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.35); }
+    .hud-speed { font-size:22px; font-weight:800; letter-spacing:-0.04em; }
+    .hud-laps  { font-size:12px; color:rgba(255,255,255,0.5); margin-top:2px; }
+    #hud-time  { font-size:30px; font-weight:800; letter-spacing:-0.03em; color:#fff; }
+    .hud-lap-label { font-size:10px; color:rgba(255,255,255,0.3); }
+    #drift-score { font-size:13px; color:#f97316; margin-top:3px; }
+
+    #end-screen {
+      position:fixed; inset:0; z-index:20;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:rgba(5,5,16,0.92); backdrop-filter:blur(12px); gap:14px;
+    }
+    #end-screen.hidden { display:none; }
+    #end-winner { font-size:52px; font-weight:800; letter-spacing:-0.04em; }
+    .btn-row { display:flex; gap:10px; }
+    #fps { position:fixed; bottom:8px; right:10px; font-size:10px; color:rgba(255,255,255,0.2); font-family:monospace; pointer-events:none; }
+  </style>
+</head>
+<body>
+<a href="../" class="back-link">← germ.fun</a>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="hud-card">
+    <div class="hud-name" style="color:#f97316">Player 1</div>
+    <div class="hud-speed" style="color:#f97316" id="spd1">0</div>
+    <div class="hud-laps">Lap <span id="lap1">1</span>/3 · Drift: <span id="d1">0</span></div>
+  </div>
+  <div class="hud-card center">
+    <div class="hud-lap-label">TIME</div>
+    <div id="hud-time">3:00</div>
+    <div id="drift-score" id="ds-total"></div>
+  </div>
+  <div class="hud-card" style="text-align:right">
+    <div class="hud-name" style="color:#00d4ff">Player 2</div>
+    <div class="hud-speed" style="color:#00d4ff" id="spd2">0</div>
+    <div class="hud-laps" style="text-align:right">Lap <span id="lap2">1</span>/3 · Drift: <span id="d2">0</span></div>
+  </div>
+</div>
+
+<div id="end-screen" class="hidden">
+  <div id="end-winner">Player 1 Wins!</div>
+  <div style="font-size:16px;color:rgba(255,255,255,0.5)" id="end-detail"></div>
+  <div class="btn-row">
+    <button class="btn-p" id="btn-rematch">Rematch</button>
+    <button class="btn-s" id="btn-emenu">Menu</button>
+  </div>
+</div>
+
+<div class="screen" id="menu">
+  <h1>Neon <span>Racer</span></h1>
+  <p>Top-down drift racing. Kumpulkan drift points. 3 laps.</p>
+  <div class="ctrl-box">
+    <div class="ctrl-col">
+      <div class="ctrl-player" style="color:#f97316">Player 1</div>
+      <div class="ctrl-line"><span class="key">W</span> Gas  <span class="key">S</span> Brake</div>
+      <div class="ctrl-line"><span class="key">A</span><span class="key">D</span> Steer</div>
+    </div>
+    <div class="ctrl-col">
+      <div class="ctrl-player" style="color:#00d4ff">Player 2</div>
+      <div class="ctrl-line"><span class="key">↑</span> Gas  <span class="key">↓</span> Brake</div>
+      <div class="ctrl-line"><span class="key">←</span><span class="key">→</span> Steer</div>
+    </div>
+  </div>
+  <button class="btn-p" id="btn-start">Start Race</button>
+</div>
+
+<div id="fps">0 fps</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  keys.add(e.code);
+  if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if (e.code === 'Escape' && running) togglePause();
+});
+window.addEventListener('keyup', e => keys.delete(e.code));
+
+const W = () => canvas.width, H = () => canvas.height;
+
+// ── TRACK DEFINITION ──────────────────────────────
+// Oval track as a series of waypoints (normalized 0-1)
+function trackPoints() {
+  const cx = 0.5, cy = 0.5;
+  const rx = 0.35, ry = 0.28;
+  const pts = [];
+  const N = 80;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    pts.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry });
+  }
+  return pts;
+}
+const TRACK_PTS_NORM = trackPoints();
+const TRACK_WIDTH = 72; // pixels
+
+function getTrackPoint(i) {
+  const p = TRACK_PTS_NORM[i % TRACK_PTS_NORM.length];
+  return { x: p.x * W(), y: p.y * H() };
+}
+
+function closestTrackPt(x, y) {
+  let minD = Infinity, minI = 0;
+  for (let i = 0; i < TRACK_PTS_NORM.length; i++) {
+    const tp = getTrackPoint(i);
+    const d = Math.hypot(x - tp.x, y - tp.y);
+    if (d < minD) { minD = d; minI = i; }
+  }
+  return { idx: minI, dist: minD };
+}
+
+// ── CAR ───────────────────────────────────────────
+class Car {
+  constructor(playerIdx, color, startOffset) {
+    this.idx   = playerIdx;
+    this.color = color;
+    this.startOffset = startOffset;
+    this.reset();
+  }
+  reset() {
+    // Start positions on track
+    const startI = Math.round(TRACK_PTS_NORM.length * this.startOffset);
+    const tp = getTrackPoint(startI);
+    const tp2 = getTrackPoint(startI + 1);
+    this.x = tp.x;
+    this.y = tp.y;
+    this.angle = Math.atan2(tp2.y - tp.y, tp2.x - tp.x);
+    this.vx = 0; this.vy = 0;
+    this.speed = 0;
+    this.driftAngle = 0; // difference between heading and velocity direction
+    this.lap     = 1;
+    this.checkpoint = startI;
+    this.driftPts  = 0;
+    this.totalDrift = 0;
+    this.lastCheckI = startI;
+    this.lapCrossed  = false;
+    this.smoke = [];
+    this.trail = [];
+  }
+}
+
+let cars = [], running = false, paused = false, raceTime = 180;
+let lastT = 0, fpsTimer = 0, fpsCount = 0;
+const MAX_LAPS = 3;
+
+function initRace() {
+  cars = [
+    new Car(0, '#f97316', 0.0),
+    new Car(1, '#00d4ff', 0.03),
+  ];
+  // Recalc start positions with current canvas size
+  cars.forEach(car => car.reset());
+  raceTime = 180;
+  running = true;
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('end-screen').classList.add('hidden');
+  document.getElementById('menu').classList.add('hidden');
+  lastT = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function endRace(reason) {
+  running = false;
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('end-screen').classList.remove('hidden');
+  const c1 = cars[0], c2 = cars[1];
+  let winner = null;
+  if (reason === 'laps') {
+    winner = c1.lap > c2.lap ? c1 : c2.lap > c1.lap ? c2 : (c1.checkpoint > c2.checkpoint ? c1 : c2);
+  } else {
+    // Time up — most laps, then checkpoint, then drift
+    if (c1.lap !== c2.lap) winner = c1.lap > c2.lap ? c1 : c2;
+    else if (c1.checkpoint !== c2.checkpoint) winner = c1.checkpoint > c2.checkpoint ? c1 : c2;
+    else winner = c1.totalDrift > c2.totalDrift ? c1 : c2;
+  }
+  const el = document.getElementById('end-winner');
+  el.textContent = `Player ${winner.idx + 1} Wins! 🏆`;
+  el.style.color = winner.color;
+  document.getElementById('end-detail').textContent =
+    `P1: Lap ${c1.lap} · ${c1.totalDrift | 0} drift pts   |   P2: Lap ${c2.lap} · ${c2.totalDrift | 0} drift pts`;
+}
+
+function togglePause() {
+  paused = !paused;
+  document.getElementById('menu').classList.toggle('hidden', !paused);
+}
+
+// ── UPDATE ────────────────────────────────────────
+const CAR_ACCEL    = 420;
+const CAR_BRAKE    = 600;
+const CAR_MAXSPEED = 310;
+const STEER_SPD    = 3.0;
+const DRIFT_FACTOR = 0.88; // lateral friction (lower = more drift)
+const GRIP_FACTOR  = 0.93;
+
+function updateCar(car, inp, dt) {
+  // Steering
+  if (inp.left)  car.angle -= STEER_SPD * dt * (1 + car.speed / CAR_MAXSPEED * 0.5);
+  if (inp.right) car.angle += STEER_SPD * dt * (1 + car.speed / CAR_MAXSPEED * 0.5);
+
+  // Throttle/brake
+  if (inp.gas) car.speed = Math.min(car.speed + CAR_ACCEL * dt, CAR_MAXSPEED);
+  else if (inp.brake) car.speed = Math.max(car.speed - CAR_BRAKE * dt, 0);
+  else car.speed *= (1 - 1.8 * dt);
+
+  // Desired velocity = pointing direction * speed
+  const desiredVx = Math.cos(car.angle) * car.speed;
+  const desiredVy = Math.sin(car.angle) * car.speed;
+
+  // Lateral friction (drift / grip)
+  const drifting = inp.brake && car.speed > 80;
+  const grip = drifting ? DRIFT_FACTOR : GRIP_FACTOR;
+  car.vx = car.vx * (1 - grip) + desiredVx * grip;
+  car.vy = car.vy * (1 - grip) + desiredVy * grip;
+
+  car.x += car.vx * dt;
+  car.y += car.vy * dt;
+
+  // Screen clamp (with track boundary enforcement)
+  car.x = Math.max(30, Math.min(W() - 30, car.x));
+  car.y = Math.max(30, Math.min(H() - 30, car.y));
+
+  // Track boundary — push back if off track
+  const cp = closestTrackPt(car.x, car.y);
+  if (cp.dist > TRACK_WIDTH / 2 + 10) {
+    const tp = getTrackPoint(cp.idx);
+    const away = Math.atan2(car.y - tp.y, car.x - tp.x);
+    const push = cp.dist - TRACK_WIDTH / 2;
+    car.x -= Math.cos(away) * push * 0.3;
+    car.y -= Math.sin(away) * push * 0.3;
+    car.speed *= 0.92; // off-track speed penalty
+  }
+
+  // Drift angle & score
+  const velAngle = Math.atan2(car.vy, car.vx);
+  let drift = velAngle - car.angle;
+  while (drift >  Math.PI) drift -= Math.PI * 2;
+  while (drift < -Math.PI) drift += Math.PI * 2;
+  const driftAmt = Math.abs(drift);
+  car.driftAngle = drift;
+
+  if (driftAmt > 0.25 && car.speed > 80) {
+    const pts = driftAmt * car.speed * dt * 0.04;
+    car.driftPts    += pts;
+    car.totalDrift  += pts;
+  } else if (driftAmt < 0.1) {
+    car.driftPts = Math.max(0, car.driftPts - 50 * dt);
+  }
+
+  // Smoke when drifting
+  if (driftAmt > 0.3 && car.speed > 60) {
+    car.smoke.push({ x: car.x, y: car.y, life: 0, maxLife: 0.5 + Math.random() * 0.3, r: 4 + Math.random() * 6 });
+  }
+  for (let i = car.smoke.length - 1; i >= 0; i--) {
+    car.smoke[i].life += dt;
+    if (car.smoke[i].life >= car.smoke[i].maxLife) car.smoke.splice(i, 1);
+  }
+
+  // Trail
+  car.trail.push({ x: car.x, y: car.y });
+  if (car.trail.length > 40) car.trail.shift();
+
+  // Lap / checkpoint tracking
+  const newCp = cp.idx;
+  const lapLen = TRACK_PTS_NORM.length;
+  // Wrap detection: if checkpoint goes from near end back to near start
+  if (car.lastCheckI > lapLen * 0.9 && newCp < lapLen * 0.1) {
+    car.lap++;
+    if (car.lap > MAX_LAPS) endRace('laps');
+  }
+  car.lastCheckI = newCp;
+  car.checkpoint = newCp + (car.lap - 1) * lapLen;
+
+  // HUD
+  document.getElementById(`spd${car.idx + 1}`).textContent = (car.speed * 0.36) | 0; // m/s to km/h-ish
+  document.getElementById(`lap${car.idx + 1}`).textContent = Math.min(car.lap, MAX_LAPS);
+  document.getElementById(`d${car.idx + 1}`).textContent = car.totalDrift | 0;
+}
+
+function update(dt) {
+  raceTime -= dt;
+  const sec = Math.max(0, raceTime);
+  const m = Math.floor(sec / 60).toString().padStart(2,'0');
+  const s = Math.floor(sec % 60).toString().padStart(2,'0');
+  document.getElementById('hud-time').textContent = `${m}:${s}`;
+  if (raceTime <= 0) { endRace('time'); return; }
+
+  cars.forEach(car => {
+    const inp = car.idx === 0
+      ? { gas: keys.has('KeyW'), brake: keys.has('KeyS'), left: keys.has('KeyA'), right: keys.has('KeyD') }
+      : { gas: keys.has('ArrowUp'), brake: keys.has('ArrowDown'), left: keys.has('ArrowLeft'), right: keys.has('ArrowRight') };
+    updateCar(car, inp, dt);
+  });
+}
+
+// ── DRAW ──────────────────────────────────────────
+function drawTrack() {
+  const N = TRACK_PTS_NORM.length;
+  // Outer road fill
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const tp = getTrackPoint(i);
+    i === 0 ? ctx.moveTo(tp.x, tp.y) : ctx.lineTo(tp.x, tp.y);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = '#1a2030';
+  ctx.lineWidth   = TRACK_WIDTH + 14;
+  ctx.stroke();
+
+  // Road surface
+  ctx.strokeStyle = '#0e1620';
+  ctx.lineWidth   = TRACK_WIDTH;
+  ctx.stroke();
+
+  // Road edge lines
+  ctx.strokeStyle = '#38bdf820';
+  ctx.lineWidth   = 2;
+  ctx.setLineDash([24, 16]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Center dashed line
+  ctx.strokeStyle = '#ffffff14';
+  ctx.lineWidth   = 2;
+  ctx.setLineDash([12, 20]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawCar(car) {
+  // Trail marks (rubber)
+  if (car.driftAngle && Math.abs(car.driftAngle) > 0.3 && car.speed > 60) {
+    ctx.strokeStyle = 'rgba(255,200,100,0.06)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    car.trail.forEach((pt, i) => {
+      i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.stroke();
+  }
+
+  // Smoke
+  car.smoke.forEach(s => {
+    const t = 1 - s.life / s.maxLife;
+    ctx.globalAlpha = t * 0.25;
+    ctx.fillStyle = '#aaaaaa';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * (1 + (1 - t) * 1.5), 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.angle + Math.PI / 2);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(3, 4, 14, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Car body
+  ctx.shadowColor = car.color;
+  ctx.shadowBlur  = 15;
+  ctx.fillStyle   = car.color;
+  ctx.beginPath();
+  ctx.roundRect(-9, -18, 18, 36, 4);
+  ctx.fill();
+
+  // Windshield
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath();
+  ctx.roundRect(-6, -14, 12, 10, 2);
+  ctx.fill();
+
+  // Wheels
+  ctx.fillStyle = '#111';
+  [[-10,-12],[ 10,-12],[-10, 12],[ 10, 12]].forEach(([wx,wy]) => {
+    ctx.beginPath();
+    ctx.roundRect(wx - 3, wy - 4, 6, 8, 2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+
+  // Player label
+  ctx.font = '10px Plus Jakarta Sans';
+  ctx.fillStyle = car.color;
+  ctx.textAlign = 'center';
+  ctx.fillText(`P${car.idx + 1}`, car.x, car.y - 26);
+
+  // Drift score popup
+  if (car.driftPts > 5) {
+    ctx.font = `bold ${10 + Math.min(car.driftPts * 0.1, 8)}px Plus Jakarta Sans`;
+    ctx.fillStyle = '#ffd700';
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.9;
+    ctx.fillText(`+${car.driftPts | 0}`, car.x, car.y - 38);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W(), H());
+
+  // Background
+  ctx.fillStyle = '#060612';
+  ctx.fillRect(0, 0, W(), H());
+
+  // Grid
+  ctx.strokeStyle = 'rgba(40,40,80,0.4)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W(); x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H()); ctx.stroke(); }
+  for (let y = 0; y < H(); y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W(), y); ctx.stroke(); }
+
+  drawTrack();
+  cars.forEach(drawCar);
+}
+
+function loop(now) {
+  if (!running) return;
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+
+  fpsCount++; fpsTimer += dt;
+  if (fpsTimer >= 0.5) {
+    document.getElementById('fps').textContent = Math.round(fpsCount / fpsTimer) + ' fps';
+    fpsTimer = 0; fpsCount = 0;
+  }
+
+  if (!paused) update(dt);
+  draw();
+}
+
+document.getElementById('btn-start').addEventListener('click', initRace);
+document.getElementById('btn-rematch').addEventListener('click', () => { initRace(); });
+document.getElementById('btn-emenu').addEventListener('click', () => {
+  running = false;
+  document.getElementById('end-screen').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+});
+</script>
+</body>
+</html>
