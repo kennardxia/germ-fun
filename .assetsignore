@@ -1,7 +1,0 @@
-﻿.git/
-.wrangler/
-workers/
-wrangler.jsonc
-*.map
-.env
-.env.*

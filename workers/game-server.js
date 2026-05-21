@@ -299,7 +299,19 @@ export default {
       ));
     }
 
-    // Serve static assets (handled by Cloudflare Pages assets binding)
+    // Block access to sensitive server-side paths even if accidentally uploaded
+    // (.assetsignore is not supported in Workers Assets — block at request level)
+    const BLOCKED_PREFIXES = ['/.git/', '/.wrangler/', '/workers/', '/node_modules/'];
+    const BLOCKED_EXACT = ['/.git', '/.wrangler', '/workers', '/wrangler.jsonc', '/wrangler.toml'];
+    if (
+      BLOCKED_PREFIXES.some(p => path.startsWith(p)) ||
+      BLOCKED_EXACT.includes(path) ||
+      path.endsWith('.map')
+    ) {
+      return new Response('Not found', { status: 404 });
+    }
+
+    // Serve static assets
     if (env.ASSETS) {
       return env.ASSETS.fetch(request);
     }
