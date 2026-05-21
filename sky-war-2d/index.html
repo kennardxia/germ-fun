@@ -181,7 +181,9 @@ let W,H;
 function resize(){W=canvas.width=Math.min(innerWidth,1920);H=canvas.height=Math.min(innerHeight,1080);}
 resize();window.addEventListener('resize',resize);
 
-let gameMode='1p',ctrlMode='pc',running=false;
+let gameMode='1p',ctrlMode=('ontouchstart' in window||navigator.maxTouchPoints>0)?'mobile':'pc',running=false;
+// Reflect auto-detected mode in menu
+if(ctrlMode==='mobile'){document.getElementById('ctrl_pc').classList.remove('sel');document.getElementById('ctrl_mob').classList.add('sel');}
 let p1PlaneIdx=0,p2PlaneIdx=1;
 let wave=1,totalCoins=0,kills1=0;
 
