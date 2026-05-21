@@ -1,63 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drift King — germ.fun</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    html, body { width:100%; height:100%; overflow:hidden; background:#050300; font-family:'Plus Jakarta Sans',sans-serif; display:flex; align-items:center; justify-content:center; }
-    body { flex-direction:column; gap:16px; }
-    .badge { font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:99px; padding:4px 12px; }
-    h1 { font-size:clamp(40px,8vw,72px); font-weight:800; letter-spacing:-0.05em; color:#fff; }
-    h1 span { color:#f59e0b; }
-    p { font-size:15px; color:rgba(255,255,255,0.4); text-align:center; max-width:360px; }
-    .tags { display:flex; gap:8px; }
-    .tag { font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; letter-spacing:0.04em; text-transform:uppercase; }
-    .t-3d { background:#1a2a3a; color:#38bdf8; }
-    .t-pvp { background:#2a1a2a; color:#f0abfc; }
-    a { font-size:13px; color:rgba(255,255,255,0.3); text-decoration:none; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin-top:8px; transition:color 0.2s; }
-    a:hover { color:rgba(255,255,255,0.7); }
-    .progress-bar { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
-    .progress-fill { height:100%; background:#f59e0b; border-radius:2px; width:35%; animation:progress 3s ease-in-out infinite alternate; }
-    @keyframes progress { from{width:30%} to{width:55%} }
-    canvas { position:fixed; inset:0; z-index:-1; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drift King — GERM.FUN</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(245,158,11,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
+.badge{display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#f59e0b;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
+.ico{font-size:4rem;margin-bottom:.8rem}
+h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
+p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
+.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
+.feat{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fbbf24;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
+a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
+a.back:hover{color:#f59e0b}
+</style>
 </head>
 <body>
-<canvas id="bg"></canvas>
-<div class="badge">Coming Soon</div>
-<h1>Drift <span>King</span></h1>
-<div class="tags">
-  <span class="tag t-3d">3D</span>
-  <span class="tag t-pvp">⚔ Local PvP</span>
+<canvas id="c"></canvas>
+<div class="card">
+  <div class="badge">Coming Soon</div>
+  <div class="ico">🏎️</div>
+  <h1>DRIFT KING</h1>
+  <p>Master the art of the drift. Earn style points, tune your car, and conquer treacherous circuits in this high-octane drifting experience.</p>
+  <div class="features">
+    <span class="feat">🚗 10 Cars</span>
+    <span class="feat">🏁 8 Tracks</span>
+    <span class="feat">💨 Drift Combos</span>
+    <span class="feat">💰 Coin System</span>
+    <span class="feat">🎮 PC + Mobile</span>
+  </div>
+  <a class="back" href="../">← Back to Games</a>
 </div>
-<p>3D drift racing. Stylized tracks. Tire smoke. Perfect your drift angle.</p>
-<div class="progress-bar"><div class="progress-fill"></div></div>
-<a href="../">← Back to germ.fun</a>
 <script>
-const c = document.getElementById('bg');
-const ctx = c.getContext('2d');
-function resize(){ c.width=innerWidth; c.height=innerHeight; }
-resize(); window.addEventListener('resize', resize);
-const pts=[];
-for(let i=0;i<60;i++) pts.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0002,vy:(Math.random()-.5)*.0002,r:1+Math.random()*2,a:.05+Math.random()*.2});
-function draw(){
-  requestAnimationFrame(draw);
-  ctx.fillStyle='rgba(5,3,0,0.15)';
-  ctx.fillRect(0,0,c.width,c.height);
-  pts.forEach(p=>{
-    p.x=(p.x+p.vx+1)%1; p.y=(p.y+p.vy+1)%1;
-    ctx.globalAlpha=p.a;
-    ctx.fillStyle='#f59e0b';
-    ctx.beginPath();
-    ctx.arc(p.x*c.width,p.y*c.height,p.r,0,Math.PI*2);
-    ctx.fill();
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
+const COL='#f59e0b';
+const pts=[];for(let i=0;i<60;i++)pts.push({x:Math.random()*1000,y:Math.random()*1000,vx:(Math.random()-.5)*1.2,vy:(Math.random()-.5)*1.2,r:Math.random()*1.5+.3});
+function loop(){
+  ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(0,0,W,H);
+  pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    ctx.beginPath();ctx.arc(p.x*W/1000,p.y*H/1000,p.r,0,Math.PI*2);ctx.fillStyle=COL+'66';ctx.fill();
   });
-  ctx.globalAlpha=1;
+  // Sweep line
+  const t=Date.now()*.0005;const x=(Math.sin(t)+1)/2*W;
+  const g=ctx.createLinearGradient(x-80,0,x+80,0);g.addColorStop(0,'transparent');g.addColorStop(.5,COL+'18');g.addColorStop(1,'transparent');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  requestAnimationFrame(loop);
 }
-draw();
+loop();
 </script>
 </body>
 </html>

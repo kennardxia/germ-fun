@@ -1,51 +1,58 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Space Miner — germ.fun</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-    html, body { width:100%; height:100%; overflow:hidden; background:#030303; font-family:'Plus Jakarta Sans',sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
-    .badge { font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:99px; padding:4px 12px; }
-    h1 { font-size:clamp(40px,8vw,72px); font-weight:800; letter-spacing:-0.05em; color:#fff; }
-    h1 span { color:#7c3aed; }
-    p { font-size:15px; color:rgba(255,255,255,0.4); text-align:center; max-width:360px; }
-    .<span class="tag t-3d">3D</span> { display:flex; gap:8px; }
-    .tag { font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; letter-spacing:0.04em; text-transform:uppercase; }
-    .t-3d { background:#1a2a3a; color:#38bdf8; }
-    .t-2d { background:#1a2a1a; color:#86efac; }
-    .t-pvp { background:#2a1a2a; color:#f0abfc; }
-    .t-solo { background:#2a2a1a; color:#fde68a; }
-    a { font-size:13px; color:rgba(255,255,255,0.3); text-decoration:none; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin-top:8px; transition:color 0.2s; }
-    a:hover { color:rgba(255,255,255,0.7); }
-    .progress-bar { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
-    .progress-fill { height:100%; background:#7c3aed; border-radius:2px; width:20%; }
-    canvas { position:fixed; inset:0; z-index:-1; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Miner — GERM.FUN</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
+.badge{display:inline-block;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.4);color:#a78bfa;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
+.ico{font-size:4rem;margin-bottom:.8rem}
+h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
+p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
+.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
+.feat{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#a78bfa;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
+a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
+a.back:hover{color:#a78bfa}
+</style>
 </head>
 <body>
-<canvas id="bg"></canvas>
-<div class="badge">Coming Soon</div>
-<h1>Space <span>Miner</span></h1>
-<div class="<span class="tag t-3d">3D</span>"><span class="tag t-3d">3D</span></div>
-<p>Mine asteroids. Fight pirates. Build your fleet in the void.</p>
-<div class="progress-bar"><div class="progress-fill"></div></div>
-<a href="../">← Back to germ.fun</a>
+<canvas id="c"></canvas>
+<div class="card">
+  <div class="badge">Coming Soon</div>
+  <div class="ico">⛏️</div>
+  <h1>SPACE MINER</h1>
+  <p>Navigate asteroid fields, extract rare minerals, upgrade your ship and crew. Build a mining empire across the galaxy — one asteroid at a time.</p>
+  <div class="features">
+    <span class="feat">🪨 Asteroid Mining</span>
+    <span class="feat">🚀 Ship Upgrades</span>
+    <span class="feat">💎 5 Minerals</span>
+    <span class="feat">💰 Coin System</span>
+    <span class="feat">🌌 Deep Space</span>
+  </div>
+  <a class="back" href="../">← Back to Games</a>
+</div>
 <script>
-const c=document.getElementById('bg'),ctx=c.getContext('2d');
-function resize(){c.width=innerWidth;c.height=innerHeight;}
-resize();window.addEventListener('resize',resize);
-const pts=[];
-for(let i=0;i<50;i++)pts.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0003,vy:(Math.random()-.5)*.0003,r:1+Math.random()*2,a:.05+Math.random()*.15});
-function draw(){
-  requestAnimationFrame(draw);
-  ctx.fillStyle='rgba(3,3,3,0.12)';ctx.fillRect(0,0,c.width,c.height);
-  pts.forEach(p=>{p.x=(p.x+p.vx+1)%1;p.y=(p.y+p.vy+1)%1;ctx.globalAlpha=p.a;ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.arc(p.x*c.width,p.y*c.height,p.r,0,Math.PI*2);ctx.fill();});
-  ctx.globalAlpha=1;
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
+const COL='#7c3aed';
+const stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*1200,y:Math.random()*800,r:Math.random()*1.2+.2,spd:Math.random()*.4+.1});
+const asts=[];for(let i=0;i<8;i++)asts.push({x:Math.random()*1200,y:Math.random()*800,r:8+Math.random()*20,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.02,vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5});
+function loop(){
+  ctx.fillStyle='rgba(3,0,20,.2)';ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{s.x-=s.spd;if(s.x<0)s.x=W;const sx=s.x*W/1200,sy=s.y*H/800;ctx.beginPath();ctx.arc(sx,sy,s.r,0,Math.PI*2);ctx.fillStyle='rgba(167,139,250,.5)';ctx.fill();});
+  asts.forEach(a=>{a.x+=a.vx;a.y+=a.vy;a.rot+=a.rotSpd;if(a.x<-30)a.x=W+30;if(a.x>W+30)a.x=-30;if(a.y<-30)a.y=H+30;if(a.y>H+30)a.y=-30;
+    const ax=a.x*W/1200,ay=a.y*H/800,ar=a.r*Math.min(W,H)/800;
+    ctx.save();ctx.translate(ax,ay);ctx.rotate(a.rot);ctx.beginPath();
+    for(let i=0;i<7;i++){const angle=i/7*Math.PI*2;const ri=ar*(0.7+Math.random()*.3);ctx.lineTo(Math.cos(angle)*ri,Math.sin(angle)*ri);}
+    ctx.closePath();ctx.fillStyle=COL+'33';ctx.strokeStyle=COL+'88';ctx.lineWidth=1;ctx.fill();ctx.stroke();ctx.restore();
+  });
+  requestAnimationFrame(loop);
 }
-draw();
+loop();
 </script>
 </body>
 </html>
