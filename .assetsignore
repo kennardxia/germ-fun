@@ -1,15 +1,7 @@
-# Cloudflare Workers Assets — exclude these from being served publicly
-.git
-.git/**
-.wrangler
-.wrangler/**
-workers
-workers/**
+﻿.git/
+.wrangler/
+workers/
 wrangler.jsonc
-package.json
-package-lock.json
-node_modules
-node_modules/**
 *.map
 .env
 .env.*
