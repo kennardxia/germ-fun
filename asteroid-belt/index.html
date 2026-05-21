@@ -7,7 +7,8 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}resize();window.addEventListener('resize',resize);
 const WEAPONS=[{name:'Laser',dmg:15,rate:8,spd:10,col:'#fbbf24'},{name:'Cannon',dmg:40,rate:20,spd:8,col:'#f97316'},{name:'Spread',dmg:12,rate:12,spd:9,col:'#38bdf8'},{name:'Missile',dmg:80,rate:50,spd:6,col:'#a78bfa'},{name:'Nuke',dmg:200,rate:120,spd:4,col:'#f472b6'}];
 let ship,asteroids=[],bullets=[],score=0,wave=0,running=false,lastMode='pc',mx=300,my=300,fireHeld=false;
 const keys={};

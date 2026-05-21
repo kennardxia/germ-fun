@@ -99,8 +99,9 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
 <script>
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
 let W,H;
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
 resize();window.addEventListener('resize',resize);
 
 let running=false,gameMode='pc';
@@ -163,7 +164,8 @@ function resetGame(){
   frameCount=0;gameSpeed=4;
   obstacles=[];coinItems=[];particles=[];stars=[];
   // Generate bg stars
-  for(let i=0;i<100;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.3,speed:(Math.random()*.5+.2),layer:Math.floor(Math.random()*3)});
+  const starCount=isLowEnd?50:100;
+  for(let i=0;i<starCount;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.3,speed:(Math.random()*.5+.2),layer:Math.floor(Math.random()*3)});
   document.getElementById('go').classList.remove('show');
   running=true;
   // Spawn first obstacle after delay

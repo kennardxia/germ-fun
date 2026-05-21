@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mech Arena 3D | germ.fun</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;user-select:none}
+canvas{display:block;margin:auto}
+#hud{position:fixed;top:10px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-size:14px;font-weight:700;pointer-events:none;display:none}
+#hud span{background:rgba(0,0,0,.6);padding:4px 10px;border-radius:8px;color:#f97316}
+#menu,#gameOver{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.88)}
+#menu h1,#gameOver h2{font-size:2.4rem;color:#f97316;text-shadow:0 0 30px #ea580c}
+#menu p,#gameOver p{color:#94a3b8;font-size:.95rem;max-width:340px;text-align:center}
+button{background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
+button:hover{transform:scale(1.05)}
+#back{position:fixed;top:10px;left:10px;background:rgba(234,88,12,.3);border:1px solid rgba(234,88,12,.5);color:#f97316;padding:6px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:700}
+#gameOver{display:none}
+</style>
+</head>
+<body>
+<a id="back" href="../index.html">← Back</a>
+<div id="hud">
+  <span>HP: <b id="hHP">100</b></span>
+  <span>Heat: <b id="hHeat">0</b>%</span>
+  <span>Wave: <b id="hWave">1</b></span>
+  <span>Score: <b id="hScore">0</b></span>
+</div>
+<div id="menu">
+  <h1>Mech Arena 3D</h1>
+  <p>Pilot a giant mech in an isometric 3D arena. WASD to move, mouse to aim & shoot. Manage your heat — overheat and you're vulnerable!</p>
+  <button onclick="startGame()">▶ Deploy Mech</button>
+  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+</div>
+<div id="gameOver">
+  <h2>Mech Destroyed</h2>
+  <p>Score: <b id="goScore">0</b></p>
+  <button onclick="startGame()">▶ Redeploy</button>
+  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
+resize();window.addEventListener('resize',resize);
+
+// Isometric
+const CELL=48;
+const ARENA=16; // cells
+function toScreen(wx,wz){
+  const ix=(wx-wz)*CELL*.7;
+  const iy=(wx+wz)*CELL*.35;
+  return{sx:W/2+ix,sy:H/2+iy-100};
+}
+
+// World coords
+let mech,enemies=[],bullets=[],particles=[],debris=[];
+let score=0,wave=0,running=false,mx=W/2,my=H/2;
+let fireHeld=false;
+const keys={};
+const MECH_SPEED=.08;
+
+function mkMech(){
+  return{x:ARENA/2,z:ARENA/2,vx:0,vz:0,hp:100,maxHp:100,heat:0,fireTimer:0,angle:0,invuln:0,weapon:0};
+}
+const WEAPONS=[
+  {name:'Cannon',dmg:35,rate:20,spd:.25,heat:12,col:'#f97316'},
+  {name:'Gatling',dmg:12,rate:5,spd:.3,heat:5,col:'#fbbf24'},
+  {name:'Rocket',dmg:80,rate:50,spd:.18,heat:25,col:'#ef4444'},
+  {name:'Laser',dmg:8,rate:3,spd:.4,heat:3,col:'#22d3ee'},
+];
+
+function spawnWave(){
+  wave++;
+  const count=Math.min(wave+1,8);
+  const positions=[[2,2],[ARENA-3,2],[2,ARENA-3],[ARENA-3,ARENA-3],[ARENA/2,2],[2,ARENA/2],[ARENA-3,ARENA/2],[ARENA/2,ARENA-3]];
+  for(let i=0;i<count;i++){
+    const pos=positions[i%positions.length];
+    const tier=Math.min(2,Math.floor(wave/3));
+    enemies.push({
+      x:pos[0]+(Math.random()-.5)*2,z:pos[1]+(Math.random()-.5)*2,
+      vx:0,vz:0,hp:40+wave*15,maxHp:40+wave*15,
+      fireTimer:60+Math.random()*60,
+      col:['#ef4444','#dc2626','#b91c1c'][tier],
+      r:.5+tier*.1,
+      tier,
+      angle:0
+    });
+  }
+  document.getElementById('hWave').textContent=wave;
+}
+
+function startGame(){
+  mech=mkMech();enemies=[];bullets=[];particles=[];debris=[];
+  score=0;wave=0;running=true;
+  document.getElementById('menu').style.display='none';
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  spawnWave();
+}
+
+canvas.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+canvas.addEventListener('mousedown',e=>{if(e.button===0)fireHeld=true;});
+canvas.addEventListener('mouseup',e=>{if(e.button===0)fireHeld=false;});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['1','2','3','4'].includes(e.key)&&mech)mech.weapon=+e.key-1;});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+function explode(x,z,col,n){
+  if(isLowEnd)n=Math.ceil(n*.5);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2;const sp=.05+Math.random()*.12;
+    particles.push({x,z,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp,life:30+Math.random()*20,col,r:3+Math.random()*4});
+  }
+}
+
+function update(){
+  if(!running)return;
+  // Mech movement (WASD = world axes in iso)
+  let mv=false;
+  if(keys['w']||keys['arrowup']){mech.vx-=MECH_SPEED;mech.vz-=MECH_SPEED;mv=true;}
+  if(keys['s']||keys['arrowdown']){mech.vx+=MECH_SPEED;mech.vz+=MECH_SPEED;mv=true;}
+  if(keys['a']||keys['arrowleft']){mech.vx-=MECH_SPEED;mech.vz+=MECH_SPEED;mv=true;}
+  if(keys['d']||keys['arrowright']){mech.vx+=MECH_SPEED;mech.vz-=MECH_SPEED;mv=true;}
+  mech.vx*=.8;mech.vz*=.8;
+  mech.x=Math.max(.5,Math.min(ARENA-.5,mech.x+mech.vx));
+  mech.z=Math.max(.5,Math.min(ARENA-.5,mech.z+mech.vz));
+
+  // Aim toward mouse (convert mouse to world approx)
+  const sp=toScreen(mech.x,mech.z);
+  mech.angle=Math.atan2(my-sp.sy,mx-sp.sx);
+
+  // Heat management
+  const w=WEAPONS[mech.weapon];
+  if(mech.heat>0)mech.heat-=.3;
+  const overheated=mech.heat>=100;
+
+  // Fire
+  mech.fireTimer--;
+  if((fireHeld||keys[' '])&&mech.fireTimer<=0&&!overheated){
+    const spd=w.spd;
+    const bx=mech.x+Math.cos(mech.angle)*.6;
+    const bz=mech.z+Math.sin(mech.angle)*.6;
+    bullets.push({x:bx,z:bz,vx:Math.cos(mech.angle)*spd,vz:Math.sin(mech.angle)*spd,
+      dmg:w.dmg,col:w.col,r:w===WEAPONS[2]?6:3,life:80,enemy:false});
+    mech.heat=Math.min(100,mech.heat+w.heat);
+    mech.fireTimer=w.rate;
+  }
+  if(mech.invuln>0)mech.invuln--;
+
+  // Update enemies
+  for(const e of enemies){
+    const dx=mech.x-e.x,dz=mech.z-e.z;
+    const dist=Math.sqrt(dx*dx+dz*dz);
+    if(dist>1.2){e.vx+=dx/dist*.025;e.vz+=dz/dist*.025;}
+    e.vx*=.85;e.vz*=.85;
+    e.x=Math.max(.3,Math.min(ARENA-.3,e.x+e.vx));
+    e.z=Math.max(.3,Math.min(ARENA-.3,e.z+e.vz));
+    e.angle=Math.atan2(dz,dx);
+    e.fireTimer--;
+    if(e.fireTimer<=0){
+      const spd=.12+e.tier*.02;
+      bullets.push({x:e.x,z:e.z,vx:dx/dist*spd,vz:dz/dist*spd,
+        dmg:10+e.tier*5,col:e.col,r:4,life:100,enemy:true});
+      e.fireTimer=80+Math.random()*60;
+    }
+  }
+
+  // Update bullets
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    b.x+=b.vx;b.z+=b.vz;b.life--;
+    if(b.life<=0||b.x<0||b.x>ARENA||b.z<0||b.z>ARENA){bullets.splice(i,1);continue;}
+
+    if(!b.enemy){
+      // vs enemies
+      let hit=false;
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j];
+        const dx=b.x-e.x,dz=b.z-e.z;
+        if(dx*dx+dz*dz<(e.r+.15)**2){
+          e.hp-=b.dmg;explode(b.x,b.z,b.col,8);
+          bullets.splice(i,1);hit=true;
+          if(e.hp<=0){score+=50+wave*10;explode(e.x,e.z,e.col,20);enemies.splice(j,1);}
+          break;
+        }
+      }
+      if(hit)continue;
+    } else {
+      // vs mech
+      if(mech.invuln===0){
+        const dx=b.x-mech.x,dz=b.z-mech.z;
+        if(dx*dx+dz*dz<.4){
+          mech.hp-=b.dmg;mech.invuln=40;
+          explode(b.x,b.z,'#ef4444',8);
+          bullets.splice(i,1);
+          if(mech.hp<=0)endGame();
+        }
+      }
+    }
+  }
+
+  // Update particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.z+=p.vz;p.life--;
+    if(p.life<=0)particles.splice(i,1);
+  }
+
+  // Wave clear
+  if(enemies.length===0){setTimeout(()=>{if(running)spawnWave();},1500);}
+
+  document.getElementById('hHP').textContent=Math.max(0,Math.round(mech.hp));
+  document.getElementById('hHeat').textContent=Math.round(mech.heat);
+  document.getElementById('hScore').textContent=score;
+}
+
+function drawMechAt(sp,angle,col,big){
+  const s=big?1.4:1;
+  ctx.save();ctx.translate(sp.sx,sp.sy);ctx.rotate(angle);
+  // Body
+  ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=big?20:10;
+  ctx.fillRect(-14*s,-20*s,28*s,32*s);
+  // Head
+  ctx.fillStyle='#292524';ctx.fillRect(-9*s,-30*s,18*s,14*s);
+  // Visor
+  const vcolor=mech&&mech.heat>80?'#ef4444':'#22d3ee';
+  ctx.fillStyle=vcolor;ctx.fillRect(-6*s,-27*s,12*s,6*s);
+  // Arms
+  ctx.fillStyle=col;ctx.fillRect(-24*s,-18*s,12*s,22*s);ctx.fillRect(12*s,-18*s,12*s,22*s);
+  // Legs
+  ctx.fillRect(-11*s,12*s,10*s,16*s);ctx.fillRect(1*s,12*s,10*s,16*s);
+  // Gun barrel
+  ctx.fillStyle='#78716c';ctx.fillRect(10*s,-8*s,24*s,6*s);
+  ctx.restore();ctx.shadowBlur=0;
+}
+
+function draw(){
+  ctx.fillStyle='#080c12';ctx.fillRect(0,0,W,H);
+
+  // Draw arena grid
+  for(let x=0;x<ARENA;x++){
+    for(let z=0;z<ARENA;z++){
+      const p=toScreen(x,z);
+      const p2=toScreen(x+1,z);
+      const p3=toScreen(x+1,z+1);
+      const p4=toScreen(x,z+1);
+      ctx.beginPath();
+      ctx.moveTo(p.sx,p.sy);ctx.lineTo(p2.sx,p2.sy);ctx.lineTo(p3.sx,p3.sy);ctx.lineTo(p4.sx,p4.sy);ctx.closePath();
+      const even=(x+z)%2;
+      ctx.fillStyle=even?'#0f1923':'#111d2b';ctx.fill();
+      ctx.strokeStyle='rgba(249,115,22,.08)';ctx.lineWidth=.5;ctx.stroke();
+    }
+  }
+
+  // Arena border glow
+  const corners=[[0,0],[ARENA,0],[ARENA,ARENA],[0,ARENA]];
+  ctx.beginPath();
+  corners.forEach((c,i)=>{const p=toScreen(c[0],c[1]);i===0?ctx.moveTo(p.sx,p.sy):ctx.lineTo(p.sx,p.sy);});
+  ctx.closePath();ctx.strokeStyle='rgba(249,115,22,.4)';ctx.lineWidth=2;ctx.stroke();
+
+  // Particles
+  for(const p of particles){
+    const sp=toScreen(p.x,p.z);
+    ctx.beginPath();ctx.arc(sp.sx,sp.sy,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.col;ctx.globalAlpha=p.life/50;ctx.fill();ctx.globalAlpha=1;
+  }
+
+  // Enemies
+  for(const e of enemies){
+    const sp=toScreen(e.x,e.z);
+    ctx.save();ctx.translate(sp.sx,sp.sy);ctx.rotate(e.angle);
+    ctx.fillStyle=e.col;ctx.shadowColor=e.col;ctx.shadowBlur=8;
+    ctx.fillRect(-10,-14,20,22);ctx.fillRect(-7,-22,14,12);
+    ctx.fillStyle='#fbbf24';ctx.fillRect(-5,-19,10,5);
+    ctx.fillStyle=e.col;ctx.fillRect(-16,-12,8,16);ctx.fillRect(8,-12,8,16);
+    ctx.fillStyle='#78716c';ctx.fillRect(8,-4,18,4);
+    ctx.restore();ctx.shadowBlur=0;
+    // HP bar
+    const hpRatio=e.hp/e.maxHp;
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(sp.sx-16,sp.sy-28,32,5);
+    ctx.fillStyle=hpRatio>.5?'#22c55e':'#ef4444';ctx.fillRect(sp.sx-16,sp.sy-28,32*hpRatio,5);
+  }
+
+  // Bullets
+  for(const b of bullets){
+    const sp=toScreen(b.x,b.z);
+    ctx.beginPath();ctx.arc(sp.sx,sp.sy,b.r,0,Math.PI*2);
+    ctx.fillStyle=b.col;ctx.shadowColor=b.col;ctx.shadowBlur=10;ctx.fill();
+  }
+  ctx.shadowBlur=0;
+
+  // Mech
+  if(running){
+    const sp=toScreen(mech.x,mech.z);
+    const flash=mech.invuln>0&&Math.floor(Date.now()/80)%2===0;
+    if(!flash){
+      const mechCol=mech.heat>80?'#ef4444':'#f97316';
+      drawMechAt(sp,mech.angle,mechCol,true);
+    }
+    // HP bar
+    const bw=150,bh=10,bx=20,by=H-30;
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(bx,by,bw,bh);
+    const ratio=mech.hp/mech.maxHp;
+    ctx.fillStyle=ratio>.5?'#22c55e':ratio>.25?'#f59e0b':'#ef4444';
+    ctx.fillRect(bx,by,bw*ratio,bh);
+    ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle='#fff';ctx.font='11px Segoe UI';ctx.textAlign='left';ctx.fillText('HP',bx,by-2);
+    // Heat bar
+    const hbx=20,hby=H-50;
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(hbx,hby,bw,bh);
+    const hRatio=mech.heat/100;
+    ctx.fillStyle=hRatio>.8?'#ef4444':hRatio>.5?'#f59e0b':'#f97316';
+    ctx.fillRect(hbx,hby,bw*hRatio,bh);
+    ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.strokeRect(hbx,hby,bw,bh);
+    ctx.fillStyle='#fff';ctx.font='11px Segoe UI';ctx.textAlign='left';ctx.fillText('HEAT',hbx,hby-2);
+    if(mech.heat>=100){
+      ctx.fillStyle='rgba(239,68,68,.8)';ctx.font='bold 22px Segoe UI';ctx.textAlign='center';
+      ctx.fillText('⚠ OVERHEATED',W/2,H-70);
+    }
+  }
+}
+
+function endGame(){
+  running=false;
+  document.getElementById('hud').style.display='none';
+  document.getElementById('goScore').textContent=score;
+  document.getElementById('gameOver').style.display='flex';
+}
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>

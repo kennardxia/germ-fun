@@ -7,6 +7,7 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
 const GW=480,GH=270;canvas.width=GW;canvas.height=GH;
 canvas.style.width=Math.min(window.innerWidth,GW*3)+'px';canvas.style.height='auto';canvas.style.display='block';canvas.style.margin='auto';canvas.style.marginTop=Math.max(0,(window.innerHeight-GH*3)/2)+'px';
 let players,round=1,wins=[0,0],running=false,lastMode='1p';

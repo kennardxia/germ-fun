@@ -216,8 +216,9 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
 // ===== CORE ENGINE =====
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
 let W,H;
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
 resize();window.addEventListener('resize',resize);
 
 // ===== GAME STATE =====

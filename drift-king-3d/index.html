@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Drift King 3D | germ.fun</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;user-select:none}
+canvas{display:block;margin:auto}
+#hud{position:fixed;top:10px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-size:14px;font-weight:700;pointer-events:none;display:none}
+#hud span{background:rgba(0,0,0,.6);padding:4px 10px;border-radius:8px;color:#f59e0b}
+#menu,#gameOver{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.88)}
+#menu h1,#gameOver h2{font-size:2.4rem;color:#f59e0b;text-shadow:0 0 30px #d97706}
+#menu p,#gameOver p{color:#94a3b8;font-size:.95rem;max-width:340px;text-align:center}
+button{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
+button:hover{transform:scale(1.05)}
+#back{position:fixed;top:10px;left:10px;background:rgba(217,119,6,.3);border:1px solid rgba(217,119,6,.5);color:#f59e0b;padding:6px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:700}
+#gameOver{display:none}
+</style>
+</head>
+<body>
+<a id="back" href="../index.html">← Back</a>
+<div id="hud">
+  <span>Speed: <b id="hSpd">0</b></span>
+  <span>Drift Score: <b id="hDrift">0</b></span>
+  <span>Best: <b id="hBest">0</b></span>
+  <span>Combo: <b id="hCombo">x1</b></span>
+</div>
+<div id="menu">
+  <h1>Drift King 3D</h1>
+  <p>Behind-car perspective drift racing. Master slides on mountain hairpins. Chain combos for maximum style score!</p>
+  <p style="color:#f59e0b;font-size:.85rem">WASD / Arrow Keys · Hold A/D to drift</p>
+  <button onclick="startGame()">▶ Start Race</button>
+  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+</div>
+<div id="gameOver">
+  <h2>Race Over</h2>
+  <p>Final Style Score: <b id="goScore">0</b></p>
+  <button onclick="startGame()">▶ Race Again</button>
+  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
+resize();window.addEventListener('resize',resize);
+
+// Track segment system
+const SEG_LEN=100,VIEW_DIST=150,TRACK_W=200;
+const ROAD_COL=['#1a1a2e','#16213e'];
+const LINE_COL='#f59e0b';
+
+// Generate sinuous mountain track
+const SEGS=2000;
+const segs=[];
+function buildTrack(){
+  let x=0,curve=0,y=0,hill=0;
+  for(let i=0;i<SEGS;i++){
+    if(i%150===0){curve=(Math.random()-.5)*.006;}
+    if(i%120===0){hill=(Math.random()-.5)*.004;}
+    x+=curve*SEG_LEN;y+=hill*SEG_LEN;
+    segs.push({x,y,z:i*SEG_LEN,curve,hill,
+      col:ROAD_COL[Math.floor(i/4)%2],
+      scenery:Math.random()<.05?{type:Math.random()<.5?'tree':'rock',side:Math.random()<.5?-1:1}:null});
+  }
+}
+buildTrack();
+
+// Car state
+let car,smoke=[],score=0,best=0,combo=1,comboTimer=0,running=false;
+const keys={};
+
+function mkCar(){return{pos:0,x:0,speed:0,driftAngle:0,drifting:false,driftScore:0,hp:100,time:0};}
+
+function startGame(){
+  car=mkCar();smoke=[];score=0;combo=1;comboTimer=0;running=true;
+  document.getElementById('menu').style.display='none';
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('hud').style.display='flex';
+}
+
+window.addEventListener('keydown',e=>keys[e.key]=true);
+window.addEventListener('keyup',e=>keys[e.key]=false);
+
+function update(){
+  if(!running)return;
+  const gas=keys['ArrowUp']||keys['w']||keys['W'];
+  const brake=keys['ArrowDown']||keys['s']||keys['S'];
+  const left=keys['ArrowLeft']||keys['a']||keys['A'];
+  const right=keys['ArrowRight']||keys['d']||keys['D'];
+
+  // Acceleration
+  if(gas)car.speed+=.18;
+  else if(brake)car.speed-=.25;
+  else car.speed*=.97;
+  car.speed=Math.max(0,Math.min(12,car.speed));
+
+  // Steering
+  if(left)car.x-=(3+car.speed*.3);
+  if(right)car.x+=(3+car.speed*.3);
+
+  // Drift detection
+  const seg=segs[Math.floor(car.pos/SEG_LEN)%SEGS];
+  const curvePull=seg.curve*car.speed*80;
+  car.x+=curvePull;
+  const drifting=(left||right)&&car.speed>5;
+  if(drifting){
+    car.driftAngle=Math.max(-0.35,Math.min(0.35,(left?-.28:.28)));
+    const ds=Math.abs(car.speed)*Math.abs(car.driftAngle)*2;
+    score+=ds;combo=Math.min(8,combo+.01);comboTimer=60;
+    // Smoke
+    if(!isLowEnd||Math.random()<.5){
+      const sNoise=(Math.random()-.5)*20;
+      smoke.push({x:W/2+sNoise,y:H*.65+sNoise*.3,life:35,r:8+Math.random()*6,vx:(Math.random()-.5)*1.5,vy:-1-Math.random()});
+    }
+  } else {
+    car.driftAngle*=.85;
+  }
+
+  // Off-track penalty
+  if(Math.abs(car.x)>TRACK_W*.5+20){car.speed*=.85;}
+  car.x*=.98; // gentle re-center
+
+  car.pos+=car.speed;
+  car.time++;
+
+  if(comboTimer>0){comboTimer--;}else{combo=Math.max(1,combo*.99);}
+  if(score>best)best=score;
+
+  // Update smoke
+  for(let i=smoke.length-1;i>=0;i--){
+    const s=smoke[i];
+    s.x+=s.vx;s.y+=s.vy;s.r+=.4;s.life--;
+    if(s.life<=0||s.r>40)smoke.splice(i,1);
+  }
+
+  // HUD
+  document.getElementById('hSpd').textContent=Math.round(car.speed*20)+'km/h';
+  document.getElementById('hDrift').textContent=Math.round(score);
+  document.getElementById('hBest').textContent=Math.round(best);
+  document.getElementById('hCombo').textContent='x'+combo.toFixed(1);
+
+  // End game after full lap
+  if(car.pos>SEGS*SEG_LEN){
+    running=false;
+    document.getElementById('hud').style.display='none';
+    document.getElementById('goScore').textContent=Math.round(score);
+    document.getElementById('gameOver').style.display='flex';
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,W,H);
+
+  // Sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H*.55);
+  sky.addColorStop(0,'#0a0a2e');sky.addColorStop(1,'#1a0a3e');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.55);
+
+  // Mountains
+  ctx.beginPath();
+  ctx.moveTo(0,H*.5);
+  for(let i=0;i<=12;i++){
+    ctx.lineTo(i/12*W,H*(.35-.1*Math.sin(i*.8+1)+.05*Math.cos(i*1.3)));
+  }
+  ctx.lineTo(W,H*.5);ctx.closePath();
+  ctx.fillStyle='#1e1b4b';ctx.fill();
+
+  // Road projection
+  const camSeg=Math.floor(car.pos/SEG_LEN)%SEGS;
+  const camX=car.x;
+  let projX=0;
+
+  for(let d=VIEW_DIST;d>=1;d--){
+    const si=(camSeg+d)%SEGS;
+    const s=segs[si];
+    const t=d/VIEW_DIST;
+    const scale=1/(t*t+.01);
+    const roadW=TRACK_W*scale*.5;
+    const screenY=H*.55+H*.4*(1-t);
+    const screenX=W*.5-projX;
+    projX+=s.curve*d*8;
+
+    const ny=H*.55+H*.4*(1-(d-1)/VIEW_DIST);
+    ctx.beginPath();
+    ctx.moveTo(screenX-roadW,screenY);
+    ctx.lineTo(screenX+roadW,screenY);
+    ctx.lineTo(W*.5-projX+TRACK_W*(.5/(((d-1)/VIEW_DIST)*((d-1)/VIEW_DIST)+.01)),ny);
+    ctx.lineTo(W*.5-projX-TRACK_W*(.5/(((d-1)/VIEW_DIST)*((d-1)/VIEW_DIST)+.01)),ny);
+    ctx.closePath();
+    ctx.fillStyle=s.col;ctx.fill();
+
+    // Center line
+    if(d%8<4){
+      ctx.beginPath();
+      ctx.moveTo(screenX-2,screenY);ctx.lineTo(screenX+2,screenY);
+      ctx.strokeStyle=LINE_COL;ctx.lineWidth=2*scale*.3;ctx.stroke();
+    }
+    // Edge lines
+    ctx.beginPath();
+    ctx.moveTo(screenX-roadW,screenY);ctx.lineTo(screenX-roadW+3,screenY);
+    ctx.moveTo(screenX+roadW-3,screenY);ctx.lineTo(screenX+roadW,screenY);
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5*scale*.3;ctx.stroke();
+
+    // Scenery
+    if(s.scenery&&d<VIEW_DIST*.7){
+      const obj=s.scenery;
+      const ox=screenX+obj.side*roadW*1.6;
+      const oy=screenY;
+      const objScale=scale*.5;
+      if(obj.type==='tree'){
+        ctx.beginPath();ctx.moveTo(ox,oy-40*objScale);ctx.lineTo(ox-14*objScale,oy);ctx.lineTo(ox+14*objScale,oy);ctx.closePath();
+        ctx.fillStyle='#166534';ctx.fill();
+        ctx.fillStyle='#92400e';ctx.fillRect(ox-3*objScale,oy,6*objScale,12*objScale);
+      } else {
+        ctx.beginPath();ctx.ellipse(ox,oy-8*objScale,16*objScale,8*objScale,0,0,Math.PI*2);
+        ctx.fillStyle='#57534e';ctx.fill();
+      }
+    }
+  }
+
+  // Smoke
+  for(const s of smoke){
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(180,180,180,${s.life/35*.4})`;ctx.fill();
+  }
+
+  // Car body (behind-car view — just show car at bottom center)
+  const carY=H*.72;
+  const carX=W*.5+Math.sin(car.driftAngle)*30;
+  ctx.save();ctx.translate(carX,carY);ctx.rotate(car.driftAngle);
+  // Body
+  ctx.fillStyle='#f59e0b';ctx.shadowColor='#d97706';ctx.shadowBlur=20;
+  ctx.fillRect(-22,-12,44,24);
+  // Roof
+  ctx.fillStyle='#b45309';ctx.fillRect(-14,-22,28,14);
+  // Wheels
+  ctx.fillStyle='#1e1b4b';
+  ctx.fillRect(-28,-16,10,10);ctx.fillRect(18,-16,10,10);
+  ctx.fillRect(-28,8,10,10);ctx.fillRect(18,8,10,10);
+  // Skid marks when drifting
+  if(car.driftAngle!==0){
+    ctx.strokeStyle=`rgba(100,80,0,${Math.abs(car.driftAngle)*2})`;ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(-20,14);ctx.lineTo(-30,60);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(20,14);ctx.lineTo(30,60);ctx.stroke();
+  }
+  ctx.restore();ctx.shadowBlur=0;
+
+  // Drift angle indicator
+  if(Math.abs(car.driftAngle)>.05){
+    ctx.fillStyle=`rgba(245,158,11,${Math.min(1,Math.abs(car.driftAngle)*3)})`;
+    ctx.font='bold 18px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('DRIFT!',W/2,H*.68);
+  }
+}
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>

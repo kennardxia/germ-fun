@@ -8,7 +8,8 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=Math.min(window.innerHeight,600);canvas.style.marginTop=(window.innerHeight-H)/2+'px';}resize();window.addEventListener('resize',resize);
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,600);canvas.style.marginTop=(window.innerHeight-H)/2+'px';}resize();window.addEventListener('resize',resize);
 let level=1,score=0,running=false,shotsLeft=3,laserPath=[];
 let mirrors=[],targets=[];
 let mx=W/2,my=H/2;

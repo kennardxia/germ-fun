@@ -56,8 +56,9 @@ canvas{display:block;touch-action:none}
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
 let W,H;
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
 resize();window.addEventListener('resize',resize);
 
 // ===== 3D PERSPECTIVE RUNNER =====

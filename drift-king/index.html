@@ -7,7 +7,8 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}resize();window.addEventListener('resize',resize);
 // Track: oval with corners
 const TRACK_W=90;
 function buildTrack(){const pts=[];const N=80;for(let i=0;i<N;i++){const a=i/N*Math.PI*2;const r=Math.min(W,H)*.35;const x=W/2+Math.cos(a)*r*(1+Math.sin(a*2)*.2);const y=H/2+Math.sin(a)*r*.65;pts.push({x,y});}return pts;}

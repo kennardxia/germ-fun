@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Void Runner 3D | germ.fun</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;user-select:none}
+canvas{display:block;margin:auto}
+#hud{position:fixed;top:10px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-size:14px;font-weight:700;pointer-events:none;display:none}
+#hud span{background:rgba(0,0,0,.6);padding:4px 10px;border-radius:8px;color:#a78bfa}
+#menu,#gameOver{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.88)}
+#menu h1,#gameOver h2{font-size:2.4rem;color:#a78bfa;text-shadow:0 0 30px #7c3aed}
+#menu p{color:#94a3b8;font-size:.95rem;max-width:340px;text-align:center}
+button{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
+button:hover{transform:scale(1.05)}
+#back{position:fixed;top:10px;left:10px;background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.5);color:#a78bfa;padding:6px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:700}
+#gameOver{display:none}
+</style>
+</head>
+<body>
+<a id="back" href="../index.html">← Back</a>
+<div id="hud">
+  <span>Distance: <b id="hDist">0</b>m</span>
+  <span>Score: <b id="hScore">0</b></span>
+  <span>Best: <b id="hBest">0</b></span>
+  <span>Lives: <b id="hLives">3</b></span>
+</div>
+<div id="menu">
+  <h1>Void Runner 3D</h1>
+  <p>Sprint through a neon 3D tunnel at insane speed. Dodge walls, gaps, and void barriers. How far can you go?</p>
+  <p style="color:#a78bfa;font-size:.85rem">← → Arrows / A D — Dodge lanes<br>Space / Up — Jump · S / Down — Slide</p>
+  <button onclick="startGame()">▶ Enter Void</button>
+  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+</div>
+<div id="gameOver">
+  <h2>Void Claimed You</h2>
+  <p>Distance: <b id="goDist">0</b>m | Score: <b id="goScore">0</b></p>
+  <button onclick="startGame()">▶ Run Again</button>
+  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
+resize();window.addEventListener('resize',resize);
+
+// Tunnel parameters
+const TUNNEL_SEGS=40;
+const LANES=3; // left/center/right
+const LANE_W=1.8; // world units per lane
+const TUNNEL_R=4.5;
+
+let player,obstacles=[],coins=[],particles=[];
+let dist=0,score=0,best=0,speed=8,frameN=0,lives=3,running=false;
+let segOffset=0; // how far we've scrolled in the tunnel
+
+const keys={};
+
+// Obstacle types in the 3D tunnel
+const OBS_TYPES=[
+  {type:'wall',lanes:[0,1],h:.5},  // block 2 lanes
+  {type:'wall',lanes:[1,2],h:.5},
+  {type:'wall',lanes:[0,2],h:.5},  // top and bottom
+  {type:'lowbar',lanes:[0,1,2],h:.25},  // duck under
+  {type:'highbar',lanes:[0,1,2],h:.25,high:true}, // jump over
+  {type:'gap',lanes:[0,1,2],gap:true},  // all lanes gap
+];
+
+function mkPlayer(){
+  return{lane:1,y:0,vy:0,sliding:false,slideTmr:0,jumpCount:0,dead:false,
+    targetLane:1,x:0,tilt:0};
+}
+
+function startGame(){
+  player=mkPlayer();obstacles=[];coins=[];particles=[];
+  dist=0;score=0;speed=8;frameN=0;lives=3;running=true;
+  document.getElementById('menu').style.display='none';
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('hud').style.display='flex';
+}
+
+function jump(){
+  if(player.jumpCount<2){
+    player.vy=6;player.jumpCount++;player.sliding=false;player.slideTmr=0;
+  }
+}
+function slide(){
+  player.sliding=true;player.slideTmr=25;
+  if(player.vy>0)player.vy+=3;
+}
+
+window.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(!running)return;
+  if(e.code==='ArrowLeft'||e.code==='KeyA'){player.targetLane=Math.max(0,player.lane-1);player.tilt=-.3;}
+  if(e.code==='ArrowRight'||e.code==='KeyD'){player.targetLane=Math.min(LANES-1,player.lane+1);player.tilt=.3;}
+  if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')jump();
+  if(e.code==='ArrowDown'||e.code==='KeyS')slide();
+});
+window.addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='ArrowLeft'||e.code==='KeyA'||e.code==='ArrowRight'||e.code==='KeyD')player.tilt*=.5;});
+
+canvas.addEventListener('touchstart',e=>{
+  if(!running){startGame();return;}
+  const tx=e.touches[0].clientX;
+  if(tx<W/3)player.targetLane=Math.max(0,player.lane-1);
+  else if(tx>W*2/3)player.targetLane=Math.min(LANES-1,player.lane+1);
+  else jump();
+},{passive:false});
+
+function spawnObstacle(){
+  const z=40+Math.random()*5;
+  // Random type
+  const templ=OBS_TYPES[Math.floor(Math.random()*OBS_TYPES.length)];
+  obstacles.push({...templ,z,cleared:false,laneOffset:(Math.random()-.5)*.3});
+}
+
+function spawnCoin(){
+  const lane=Math.floor(Math.random()*LANES);
+  coins.push({lane,z:40,y:(Math.random()-.5)*1.5,cleared:false});
+}
+
+// Project a point in the tunnel to screen
+function tunnelProject(laneX,y,z){
+  // Perspective: vanishing point at W/2, H*0.45
+  const depth=z;
+  const fov=450;
+  const scale=fov/(fov+depth*8);
+  const sx=W*.5+laneX*LANE_W*80*scale;
+  const sy=H*.45+(-y-2)*70*scale;
+  return{sx,sy,scale};
+}
+
+function drawTunnel(){
+  // Draw tunnel rings from far to near
+  const segs=isLowEnd?20:TUNNEL_SEGS;
+  for(let i=segs;i>=0;i--){
+    const z=i/segs;
+    const p=tunnelProject(0,0,z);
+    const r=TUNNEL_R*p.scale*80;
+    const alpha=.15+(1-z)*.3;
+    const hue=270+frameN*.5;
+    ctx.beginPath();ctx.arc(p.sx,p.sy,r,0,Math.PI*2);
+    ctx.strokeStyle=`hsla(${hue},80%,60%,${alpha})`;ctx.lineWidth=2;ctx.stroke();
+    // Lane dividers
+    for(let ln=0;ln<=LANES;ln++){
+      const lx=(ln-LANES/2)*LANE_W;
+      const lp=tunnelProject(lx,0,z);
+      if(i%2===0){
+        ctx.beginPath();ctx.arc(lp.sx,lp.sy,2*p.scale,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${hue},60%,70%,${alpha*.5})`;ctx.fill();
+      }
+    }
+  }
+}
+
+function update(){
+  if(!running)return;
+  frameN++;dist+=speed*.05;score=Math.round(dist*10);
+  speed=Math.min(22,8+dist*.02);
+  if(score>best)best=score;
+
+  // Player lane transition
+  player.lane+=(player.targetLane-player.lane)*.15;
+  player.tilt*=.85;
+
+  // Jump physics (y = height above floor, positive = up)
+  player.y+=player.vy*.08;
+  player.vy-=.4;
+  if(player.y<=0){player.y=0;player.vy=0;player.jumpCount=0;}
+  if(player.sliding){player.slideTmr--;if(player.slideTmr<=0)player.sliding=false;}
+
+  // Spawn
+  if(frameN%Math.max(30,60-Math.floor(dist*.1))===0)spawnObstacle();
+  if(frameN%20===0)spawnCoin();
+
+  // Move obstacles toward camera
+  const dz=speed*.002;
+  for(let i=obstacles.length-1;i>=0;i--){
+    const o=obstacles[i];
+    o.z-=dz;
+    if(o.z<0){obstacles.splice(i,1);continue;}
+    // Collision when close
+    if(!o.cleared&&o.z<.08&&o.z>.01){
+      const pLane=Math.round(player.lane);
+      let hit=false;
+      if(!o.gap){
+        if(o.lanes.includes(pLane)){
+          // Check vertical clearance
+          if(o.type==='lowbar'&&!player.sliding)hit=true;
+          else if(o.type==='highbar'&&player.y<.2)hit=true;
+          else if(o.type==='wall')hit=true;
+        }
+      } else {
+        // gap — need to jump
+        if(player.y<.3)hit=true;
+      }
+      if(hit){
+        o.cleared=true;
+        lives--;
+        // Flash & recoil
+        for(let p2=0;p2<(isLowEnd?8:16);p2++){
+          const a=Math.random()*Math.PI*2;
+          const sp=2+Math.random()*4;
+          particles.push({x:W*.5,y:H*.45,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:25,col:'#ef4444',r:4});
+        }
+        if(lives<=0){running=false;setTimeout(()=>{
+          document.getElementById('goDist').textContent=Math.round(dist);
+          document.getElementById('goScore').textContent=score;
+          document.getElementById('gameOver').style.display='flex';
+          document.getElementById('hud').style.display='none';
+        },800);}
+      } else {o.cleared=true;}
+    }
+  }
+
+  // Coins
+  for(let i=coins.length-1;i>=0;i--){
+    const c=coins[i];c.z-=dz;
+    if(c.z<0){coins.splice(i,1);continue;}
+    if(!c.cleared&&c.z<.08){
+      if(Math.round(player.lane)===c.lane){
+        score+=50;c.cleared=true;
+        particles.push({x:W*.5+(c.lane-1)*100,y:H*.5,vx:0,vy:-2,life:30,col:'#fbbf24',r:6,txt:'+50'});
+      }
+    }
+  }
+
+  // Particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.9;p.vy*=.9;p.life--;
+    if(p.life<=0)particles.splice(i,1);
+  }
+
+  document.getElementById('hDist').textContent=Math.round(dist);
+  document.getElementById('hScore').textContent=score;
+  document.getElementById('hBest').textContent=best;
+  document.getElementById('hLives').textContent=lives;
+}
+
+function draw(){
+  ctx.fillStyle='#080010';ctx.fillRect(0,0,W,H);
+  // Radial gradient bg
+  const rg=ctx.createRadialGradient(W/2,H*.45,0,W/2,H*.45,W*.6);
+  rg.addColorStop(0,'rgba(40,0,80,.4)');rg.addColorStop(1,'transparent');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+
+  drawTunnel();
+
+  // Obstacles
+  for(const o of obstacles){
+    const lc=o.lanes||[0,1,2];
+    for(const ln of lc){
+      const lx=ln-1;
+      const p=tunnelProject(lx,0,o.z);
+      if(p.scale<=0||p.sx<-50||p.sx>W+50)continue;
+      const r=p.scale*60;
+      if(o.gap){
+        // Floor gap — draw hazard lines
+        ctx.fillStyle=`rgba(239,68,68,${Math.min(1,p.scale*2)})`;
+        ctx.fillRect(p.sx-r*.8,p.sy+r*.2,r*1.6,r*.3);
+      } else if(o.type==='lowbar'){
+        ctx.fillStyle=`rgba(251,191,36,${Math.min(1,p.scale*2)})`;
+        ctx.fillRect(p.sx-r*.8,p.sy+r*.2,r*1.6,r*.15);
+      } else if(o.type==='highbar'){
+        ctx.fillStyle=`rgba(251,191,36,${Math.min(1,p.scale*2)})`;
+        ctx.fillRect(p.sx-r*.8,p.sy-r*.3,r*1.6,r*.15);
+      } else {
+        ctx.fillStyle=`rgba(239,68,68,${Math.min(.9,p.scale*1.8)})`;
+        ctx.strokeStyle='rgba(255,100,100,.5)';ctx.lineWidth=1.5;
+        ctx.fillRect(p.sx-r*.8,p.sy-r*.4,r*1.6,r*.8);
+        ctx.strokeRect(p.sx-r*.8,p.sy-r*.4,r*1.6,r*.8);
+      }
+    }
+  }
+
+  // Coins
+  for(const c of coins){
+    if(c.cleared)continue;
+    const lx=c.lane-1;
+    const p=tunnelProject(lx,c.y,c.z);
+    if(p.scale<=0)continue;
+    ctx.beginPath();ctx.arc(p.sx,p.sy,8*p.scale,0,Math.PI*2);
+    ctx.fillStyle='#fbbf24';ctx.shadowColor='#fbbf24';ctx.shadowBlur=10*p.scale;ctx.fill();
+    ctx.shadowBlur=0;
+  }
+
+  // Player runner
+  const plx=W*.5+(player.lane-1)*160;
+  const ply=H*.72-player.y*60;
+  const plh=player.sliding?16:32;
+  ctx.save();ctx.translate(plx,ply);ctx.rotate(player.tilt);
+  ctx.fillStyle='#a78bfa';ctx.shadowColor='#7c3aed';ctx.shadowBlur=20;
+  ctx.fillRect(-10,-plh,20,plh);
+  // Head
+  ctx.fillStyle='#c4b5fd';ctx.beginPath();ctx.arc(0,-plh-8,8,0,Math.PI*2);ctx.fill();
+  ctx.restore();ctx.shadowBlur=0;
+
+  // Trail
+  if(!isLowEnd){
+    for(let i=0;i<8;i++){
+      const alpha=(8-i)/8*.4;
+      ctx.beginPath();ctx.arc(plx,ply+(i*6),6-i*.5,0,Math.PI*2);
+      ctx.fillStyle=`rgba(167,139,250,${alpha})`;ctx.fill();
+    }
+  }
+
+  // Particles
+  for(const p of particles){
+    if(p.txt){
+      ctx.fillStyle=p.col;ctx.font='bold 14px Segoe UI';ctx.textAlign='center';
+      ctx.globalAlpha=p.life/30;ctx.fillText(p.txt,p.x,p.y);ctx.globalAlpha=1;
+    } else {
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.col;ctx.globalAlpha=p.life/25;ctx.fill();ctx.globalAlpha=1;
+    }
+  }
+
+  // Speed blur lines
+  const blur=Math.min(1,(speed-8)/14);
+  if(blur>0){
+    for(let i=0;i<20;i++){
+      const seed=(i*1337)%999;
+      const lx=(seed*11)%W;const ly=(seed*17)%H;
+      ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(lx,ly+(20+speed*2));
+      ctx.strokeStyle=`rgba(167,139,250,${blur*.25})`;ctx.lineWidth=1;ctx.stroke();
+    }
+  }
+}
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>

@@ -8,7 +8,8 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}resize();window.addEventListener('resize',resize);
 let ship,asteroids=[],pirates=[],bullets=[],eBullets=[],ore=0,score=0,wave=0,running=false,mx=0,my=0,fireTimer=0;
 const keys={};
 window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);

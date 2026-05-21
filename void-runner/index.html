@@ -7,7 +7,8 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}resize();window.addEventListener('resize',resize);
 const GROUND=()=>H-80;
 let player,obstacles=[],coins=[],bgPieces=[],score=0,coinCount=0,best=0,running=false,speed=5,frameN=0,spawnTimer=0;
 const keys={};

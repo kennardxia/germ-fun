@@ -7,7 +7,8 @@
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const isLowEnd=navigator.hardwareConcurrency<=4;
+let W,H;function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}resize();window.addEventListener('resize',resize);
 let mech,enemies=[],bullets=[],eBullets=[],kills=0,wave=0,running=false,lastMode='pc',mx=300,my=300,fireHeld=false,heat=0;
 const keys={};
 const ENEMY_T=[

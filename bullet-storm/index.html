@@ -182,8 +182,9 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
 <script>
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
 let W,H;
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
 resize();window.addEventListener('resize',resize);
 
 // Game state
@@ -515,6 +516,7 @@ function killEnemy(idx){
 }
 
 function spawnParticles(x,y,col,n){
+  if(isLowEnd)n=Math.ceil(n*.5);
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2,sp=1+Math.random()*4;
     particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:20+Math.random()*20,col,r:1.5+Math.random()*2.5,gravity:.06});

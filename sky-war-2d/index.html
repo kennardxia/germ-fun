@@ -176,8 +176,9 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
 <script>
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
+const isLowEnd=navigator.hardwareConcurrency<=4;
 let W,H;
-function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+function resize(){W=canvas.width=Math.min(innerWidth,1920);H=canvas.height=Math.min(innerHeight,1080);}
 resize();window.addEventListener('resize',resize);
 
 let gameMode='1p',ctrlMode='pc',running=false;
@@ -469,6 +470,7 @@ function endGame(winTeam){
 }
 
 function explode(x,y,col,n){
+  if(isLowEnd)n=Math.ceil(n*.5);
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2,sp=1+Math.random()*5;
     particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,life:25+Math.random()*30,col,r:1.5+Math.random()*3,grav:.08});
