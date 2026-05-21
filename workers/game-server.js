@@ -11,23 +11,44 @@ const MAX_PLAYERS = 8;
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minutes
 const RATE_LIMIT_MSG_PER_SEC = 60;
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = new Set([
+  'https://germ.fun',
+  'https://www.germ.fun',
+  'https://germ-fun.kennardxia.workers.dev',
+]);
+
 // Per-game position/velocity clamp limits (anti-cheat)
 const GAME_LIMITS = {
-  'skywar2d':   { maxX: 3000, maxY: 2000, maxVel: 15 },
-  'skywar3d':   { maxX: 2000, maxY: 2000, maxVel: 20 },
-  'neonracer':  { maxX: 3000, maxY: 3000, maxVel: 10 },
-  'bulletstorm':{ maxX: 2000, maxY: 2000, maxVel: 8  },
-  'gravswitch': { maxX: 2000, maxY: 1000, maxVel: 12 },
-  'default':    { maxX: 5000, maxY: 5000, maxVel: 25 },
+  'skywar2d':     { maxX: 3000, maxY: 2000, maxVel: 15 },
+  'skywar3d':     { maxX: 2000, maxY: 2000, maxVel: 20 },
+  'neonracer':    { maxX: 3000, maxY: 3000, maxVel: 10 },
+  'bulletstorm':  { maxX: 2000, maxY: 2000, maxVel: 8  },
+  'gravswitch':   { maxX: 2000, maxY: 1000, maxVel: 12 },
+  'asteroidbelt': { maxX: 4000, maxY: 4000, maxVel: 12 },
+  'driftking':    { maxX: 3000, maxY: 3000, maxVel: 15 },
+  'laserbounce':  { maxX: 2000, maxY: 2000, maxVel: 5  },
+  'mecharena':    { maxX: 3000, maxY: 3000, maxVel: 10 },
+  'pixelduel':    { maxX: 1000, maxY: 800,  maxVel: 12 },
+  'spaceminer':   { maxX: 5000, maxY: 5000, maxVel: 12 },
+  'voidrunner':   { maxX: 5000, maxY: 1000, maxVel: 15 },
+  'default':      { maxX: 5000, maxY: 5000, maxVel: 25 },
 };
 
 // Allowed message keys per game type (input messages)
 const ALLOWED_KEYS = {
-  'skywar2d':   new Set(['type','vx','vy','x','y','hp','firing','weapon','planeType','alive']),
-  'skywar3d':   new Set(['type','x','y','z','vx','vy','vz','pitch','yaw','hp','firing','weapon']),
-  'neonracer':  new Set(['type','x','y','angle','speed','steer','nitro','lap','nextWP']),
-  'bulletstorm':new Set(['type','x','y','vx','vy','hp','weapon','score']),
-  'gravswitch': new Set(['type','y','vy','score','gravDir','alive']),
+  'skywar2d':     new Set(['type','vx','vy','x','y','hp','firing','weapon','planeType','alive']),
+  'skywar3d':     new Set(['type','x','y','z','vx','vy','vz','pitch','yaw','hp','firing','weapon']),
+  'neonracer':    new Set(['type','x','y','angle','speed','steer','nitro','lap','nextWP']),
+  'bulletstorm':  new Set(['type','x','y','vx','vy','hp','weapon','score']),
+  'gravswitch':   new Set(['type','y','vy','score','gravDir','alive']),
+  'asteroidbelt': new Set(['type','x','y','vx','vy','angle','hp','score','alive']),
+  'driftking':    new Set(['type','x','y','angle','speed','drift','score','lap']),
+  'laserbounce':  new Set(['type','x','y','aimX','aimY','score','level']),
+  'mecharena':    new Set(['type','x','y','angle','hp','weapon','score','alive']),
+  'pixelduel':    new Set(['type','x','y','vy','facing','hp','action','wins']),
+  'spaceminer':   new Set(['type','x','y','vx','vy','angle','hp','ore','score']),
+  'voidrunner':   new Set(['type','y','vy','score','sliding','alive']),
 };
 
 function generateRoomCode() {
@@ -210,11 +231,14 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // CORS headers for all responses
+    // CORS headers — allow both production domain and workers.dev subdomain
+    const origin = request.headers.get('Origin') || '';
+    const corsOrigin = ALLOWED_ORIGINS.has(origin) ? origin : 'https://germ.fun';
     const corsHeaders = {
-      'Access-Control-Allow-Origin': 'https://germ.fun',
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Vary': 'Origin',
     };
 
     if (request.method === 'OPTIONS') {
@@ -225,7 +249,7 @@ export default {
     if (request.method === 'POST' && path === '/room/create') {
       const gameType = url.searchParams.get('game') || 'skywar2d';
       // Validate game type
-      const validGames = new Set(Object.keys(GAME_LIMITS));
+      const validGames = new Set([...Object.keys(GAME_LIMITS), 'default']);
       if (!validGames.has(gameType)) {
         return new Response('Invalid game type', { status: 400, headers: corsHeaders });
       }
