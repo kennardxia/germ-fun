@@ -1,58 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Miner — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.4);color:#a78bfa;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#a78bfa;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#a78bfa}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Space Miner — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#030308;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(251,191,36,.06) 0%,transparent 70%),#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#fbbf24}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#000;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#fbbf24}#shop{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:80}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>⛏️ SPACE MINER</h1><p style="color:#64748b">Mine asteroids — upgrade your ship — fight pirates</p><div class="mrow"><div class="mcard" onclick="startGame()"><div class="mi">🚀</div><h3>Start Mining</h3><p>WASD move + mouse aim + click fire</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">HP <span class="hv" id="hH">100</span></div><div class="hb">Ore <span class="hv" id="hO">0</span></div><div class="hb">Wave <span class="hv" id="hW">1</span></div><div class="hb">Score <span class="hv" id="hS">0</span></div></div>
+<div id="shop"><h2 style="font-size:1.8rem;font-weight:900;color:#fbbf24">⛏️ UPGRADE SHOP</h2><div style="color:#94a3b8;font-size:.9rem">Ore: <span id="shopOre" style="color:#fbbf24;font-weight:900"></span></div><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center" id="shopItems"></div><button class="bigbtn" onclick="nextWaveStart()">Continue Mining →</button></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#fbbf24">DESTROYED</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame()">↩ Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">⛏️</div>
-  <h1>SPACE MINER</h1>
-  <p>Navigate asteroid fields, extract rare minerals, upgrade your ship and crew. Build a mining empire across the galaxy — one asteroid at a time.</p>
-  <div class="features">
-    <span class="feat">🪨 Asteroid Mining</span>
-    <span class="feat">🚀 Ship Upgrades</span>
-    <span class="feat">💎 5 Minerals</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">🌌 Deep Space</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#7c3aed';
-const stars=[];for(let i=0;i<120;i++)stars.push({x:Math.random()*1200,y:Math.random()*800,r:Math.random()*1.2+.2,spd:Math.random()*.4+.1});
-const asts=[];for(let i=0;i<8;i++)asts.push({x:Math.random()*1200,y:Math.random()*800,r:8+Math.random()*20,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.02,vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5});
-function loop(){
-  ctx.fillStyle='rgba(3,0,20,.2)';ctx.fillRect(0,0,W,H);
-  stars.forEach(s=>{s.x-=s.spd;if(s.x<0)s.x=W;const sx=s.x*W/1200,sy=s.y*H/800;ctx.beginPath();ctx.arc(sx,sy,s.r,0,Math.PI*2);ctx.fillStyle='rgba(167,139,250,.5)';ctx.fill();});
-  asts.forEach(a=>{a.x+=a.vx;a.y+=a.vy;a.rot+=a.rotSpd;if(a.x<-30)a.x=W+30;if(a.x>W+30)a.x=-30;if(a.y<-30)a.y=H+30;if(a.y>H+30)a.y=-30;
-    const ax=a.x*W/1200,ay=a.y*H/800,ar=a.r*Math.min(W,H)/800;
-    ctx.save();ctx.translate(ax,ay);ctx.rotate(a.rot);ctx.beginPath();
-    for(let i=0;i<7;i++){const angle=i/7*Math.PI*2;const ri=ar*(0.7+Math.random()*.3);ctx.lineTo(Math.cos(angle)*ri,Math.sin(angle)*ri);}
-    ctx.closePath();ctx.fillStyle=COL+'33';ctx.strokeStyle=COL+'88';ctx.lineWidth=1;ctx.fill();ctx.stroke();ctx.restore();
-  });
-  requestAnimationFrame(loop);
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+let ship,asteroids=[],pirates=[],bullets=[],eBullets=[],ore=0,score=0,wave=0,running=false,mx=0,my=0,fireTimer=0;
+const keys={};
+window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+canvas.addEventListener('click',fire);
+const upgrades={drillPow:1,shield:0,speed:0,multishot:0};
+function mkShip(){return{x:W/2,y:H/2,vx:0,vy:0,angle:0,hp:100,maxHp:100};}
+function startGame(){ship=mkShip();asteroids=[];pirates=[];bullets=[];eBullets=[];ore=0;score=0;wave=0;Object.assign(upgrades,{drillPow:1,shield:0,speed:0,multishot:0});running=true;document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('hud').style.display='flex';nextWaveStart();}
+function spawnAsteroids(){for(let i=0;i<8+wave*2;i++){const a=Math.random()*Math.PI*2;const d=250+Math.random()*300;const r=20+Math.random()*25;asteroids.push({x:ship.x+Math.cos(a)*d,y:ship.y+Math.sin(a)*d,vx:(Math.random()-.5),vy:(Math.random()-.5),r,hp:r,maxHp:r,ore:Math.floor(r/5)});}}
+function spawnPirates(){for(let i=0;i<wave;i++){const a=Math.random()*Math.PI*2;pirates.push({x:ship.x+Math.cos(a)*400,y:ship.y+Math.sin(a)*400,vx:0,vy:0,angle:0,hp:50+wave*10,maxHp:50+wave*10,fireTimer:90});}}
+function nextWaveStart(){wave++;spawnAsteroids();if(wave>1)spawnPirates();document.getElementById('hW').textContent=wave;document.getElementById('shop').style.display='none';}
+function openShop(){running=false;document.getElementById('shop').style.display='flex';document.getElementById('shopOre').textContent=ore;const si=document.getElementById('shopItems');si.innerHTML='';const items=[{id:'drillPow',name:'⚡ Drill Power',desc:'More damage',cost:15},{id:'shield',name:'🛡️ Shield +20',desc:'More HP',cost:20},{id:'speed',name:'💨 Engine',desc:'Faster ship',cost:15},{id:'multishot',name:'🔫 Multishot',desc:'3-way fire',cost:30}];for(const it of items){const d=document.createElement('div');d.style.cssText='background:rgba(255,255,255,.05);border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:.8rem 1.2rem;text-align:center;cursor:pointer;min-width:120px';d.innerHTML=`<div style="font-size:1.5rem">${it.name}</div><div style="font-size:.7rem;color:#94a3b8">${it.desc}</div><div style="color:#fbbf24;font-size:.75rem;font-weight:700">${it.cost} ore</div>`;d.onclick=()=>{if(ore>=it.cost){ore-=it.cost;upgrades[it.id]++;if(it.id==='shield')ship.maxHp+=20;document.getElementById('shopOre').textContent=ore;}};si.appendChild(d);}}
+function fire(){if(!running)return;const a=Math.atan2(my-ship.y,mx-ship.x);const bspd=10;bullets.push({x:ship.x,y:ship.y,vx:Math.cos(a)*bspd,vy:Math.sin(a)*bspd,dmg:10+upgrades.drillPow*5,life:80});if(upgrades.multishot>0){bullets.push({x:ship.x,y:ship.y,vx:Math.cos(a+.25)*bspd,vy:Math.sin(a+.25)*bspd,dmg:8,life:80});bullets.push({x:ship.x,y:ship.y,vx:Math.cos(a-.25)*bspd,vy:Math.sin(a-.25)*bspd,dmg:8,life:80});}}
+function update(){
+  ship.angle=Math.atan2(my-ship.y,mx-ship.x);
+  const spd=2.5+upgrades.speed*.5;
+  if(keys.w)ship.vy-=.15*spd;if(keys.s)ship.vy+=.15*spd;if(keys.a)ship.vx-=.15*spd;if(keys.d)ship.vx+=.15*spd;
+  ship.vx*=.92;ship.vy*=.92;ship.x+=ship.vx;ship.y+=ship.vy;
+  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx;b.y+=b.vy;b.life--;if(b.life<=0){bullets.splice(i,1);continue;}let hit=false;for(let j=asteroids.length-1;j>=0;j--){const a=asteroids[j];if(Math.hypot(b.x-a.x,b.y-a.y)<a.r){a.hp-=b.dmg;hit=true;if(a.hp<=0){ore+=a.ore;score+=a.ore*10;asteroids.splice(j,1);}break;}}if(!hit)for(let j=pirates.length-1;j>=0;j--){const p=pirates[j];if(Math.hypot(b.x-p.x,b.y-p.y)<18){p.hp-=b.dmg;hit=true;if(p.hp<=0){ore+=5;score+=50;pirates.splice(j,1);}break;}}if(hit)bullets.splice(i,1);}
+  for(let i=eBullets.length-1;i>=0;i--){const b=eBullets[i];b.x+=b.vx;b.y+=b.vy;b.life--;if(b.life<=0){eBullets.splice(i,1);continue;}if(Math.hypot(b.x-ship.x,b.y-ship.y)<16){ship.hp-=12;eBullets.splice(i,1);if(ship.hp<=0){endGame();return;}}}
+  for(const p of pirates){const dx=ship.x-p.x,dy=ship.y-p.y,d=Math.hypot(dx,dy)||1;p.vx+=(dx/d)*.08;p.vy+=(dy/d)*.08;p.vx*=.95;p.vy*=.95;p.x+=p.vx;p.y+=p.vy;p.angle=Math.atan2(dy,dx);p.fireTimer--;if(p.fireTimer<=0&&d<400){const a=p.angle;eBullets.push({x:p.x,y:p.y,vx:Math.cos(a)*4.5,vy:Math.sin(a)*4.5,life:90});p.fireTimer=60;}}
+  for(const a of asteroids){a.x+=a.vx;a.y+=a.vy;}
+  if(asteroids.length===0&&pirates.length===0){openShop();}
+  document.getElementById('hH').textContent=Math.ceil(ship.hp);document.getElementById('hO').textContent=ore;document.getElementById('hS').textContent=score;
 }
-loop();
-</script>
-</body>
-</html>
+function endGame(){running=false;document.getElementById('hud').style.display='none';document.getElementById('goS').textContent=score;document.getElementById('gameOver').style.display='flex';}
+function draw(){
+  ctx.fillStyle='#030308';ctx.fillRect(0,0,W,H);
+  // Stars
+  ctx.fillStyle='rgba(255,255,255,.6)';for(let s of stars)ctx.fillRect(s[0],s[1],s[2],s[2]);
+  // Asteroids
+  for(const a of asteroids){ctx.save();ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.shadowColor='#a78bfa';ctx.shadowBlur=8;ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,Math.PI*2);ctx.stroke();ctx.restore();ctx.shadowBlur=0;ctx.fillStyle='#a78bfa';ctx.fillRect(a.x-a.r/2,a.y-a.r-8,a.r,4);ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(a.x-a.r/2,a.y-a.r-8,a.r*(a.hp/a.maxHp),4);}
+  for(const p of pirates){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);ctx.fillStyle='#ef4444';ctx.shadowColor='#ef4444';ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(-12,10);ctx.lineTo(-12,-10);ctx.closePath();ctx.fill();ctx.restore();ctx.shadowBlur=0;}
+  for(const b of bullets){ctx.save();ctx.fillStyle='#fbbf24';ctx.shadowColor='#fbbf24';ctx.shadowBlur=8;ctx.beginPath();ctx.arc(b.x,b.y,3,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;}
+  for(const b of eBullets){ctx.save();ctx.fillStyle='#f87171';ctx.shadowColor='#f87171';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;}
+  ctx.save();ctx.translate(ship.x,ship.y);ctx.rotate(ship.angle);ctx.fillStyle='#fbbf24';ctx.shadowColor='#fbbf24';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(20,0);ctx.lineTo(-14,12);ctx.lineTo(-8,0);ctx.lineTo(-14,-12);ctx.closePath();ctx.fill();ctx.restore();ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(10,H-18,180,8);ctx.fillStyle='#10b981';ctx.fillRect(10,H-18,180*(ship.hp/ship.maxHp),8);
+}
+const stars=Array.from({length:150},()=>[Math.random()*4000-2000,Math.random()*3000-1500,Math.random()<.1?2:1]);
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>

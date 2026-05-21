@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gravity Switch 3D — germ.fun</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a18;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+canvas{display:block;touch-action:none}
+#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,.1) 0%,transparent 70%),#0a0a18;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}
+#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#6366f1,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}
+.mcard:hover{background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.4);transform:translateY(-2px)}
+.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}
+.mi{font-size:2rem;margin-bottom:.3rem}
+.mcard h3{font-size:.88rem;font-weight:700;color:#a78bfa}
+.mcard p{font-size:.72rem;color:#64748b;margin-top:.2rem}
+.bigbtn{background:linear-gradient(135deg,#6366f1,#a78bfa);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;transition:.2s}
+.bigbtn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(99,102,241,.3)}
+#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50}
+.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}
+.hv{font-size:1.1rem;font-weight:900;color:#a78bfa}
+#notify{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(99,102,241,.9);padding:.35rem 1rem;border-radius:14px;font-size:.82rem;font-weight:700;z-index:300;opacity:0;transition:.25s;pointer-events:none}
+#notify.show{opacity:1}
+#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}
+#gameOver h2{font-size:2.5rem;font-weight:900;color:#6366f1}
+</style>
+</head>
+<body>
+<div id="menu">
+  <h1>🌀 GRAVITY SWITCH 3D</h1>
+  <p style="color:#64748b">Z-axis infinite runner — obstacles approach from the distance</p>
+  <div class="mrow">
+    <div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div><h3>PC Mode</h3><p>SPACE / Click to flip</p></div>
+    <div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile</h3><p>Tap anywhere</p></div>
+  </div>
+  <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
+  <a href="../gravity-switch/" style="color:#475569;font-size:.78rem">▶ Play 2D version</a>
+</div>
+
+<div id="hud" style="display:none">
+  <div class="hb">Score <span class="hv" id="hScore">0</span></div>
+  <div class="hb">Best <span class="hv" id="hBest">0</span></div>
+  <div class="hb">Coins <span class="hv" id="hCoins" style="color:#f59e0b">0</span></div>
+  <div class="hb">Combo <span class="hv" id="hCombo" style="color:#f87171">x1</span></div>
+</div>
+<div id="notify"></div>
+<div id="gameOver">
+  <h2>CRASHED!</h2>
+  <div style="font-size:1.1rem;color:#94a3b8">Score <span id="goScore" style="color:#f59e0b;font-weight:900"></span></div>
+  <button class="bigbtn" onclick="startGame(lastMode)">↩ Try Again</button>
+  <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
+</div>
+
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+
+// ===== 3D PERSPECTIVE RUNNER =====
+// Player sits at fixed screen position; obstacles move toward camera (z shrinks)
+// Gravity flip moves player between top lane and bottom lane (y = TOP_Y or BOT_Y)
+
+const LANE_TOP=-0.5;  // world Y for top lane
+const LANE_BOT=0.5;   // world Y for bot lane
+const PLAYER_Z=-2;    // player world Z (fixed, horizon ahead)
+const OBS_SPAWN_Z=12; // obstacles spawn far away
+const FOV=600;        // focal length
+
+let running=false,lastMode='pc';
+let py=LANE_BOT,gravDir=1; // 1=falling down, -1=falling up
+let vy=0;
+let score=0,coins=0,combo=1,comboTimer=0;
+let distance=0,bestScore=0;
+let obstacles=[],coinObjs=[];
+let spawnTimer=0,spawnInterval=80;
+let speed=5; // world Z speed
+let notifyTimer=0;
+
+function project(wx,wy,wz){
+  // Perspective: horizon at H/2, player at z=PLAYER_Z
+  const dz=wz-PLAYER_Z;
+  if(dz<=0)return{x:-9999,y:-9999,scale:0};
+  const scale=FOV/dz;
+  const sx=W/2+wx*scale;
+  const sy=H/2-wy*scale;
+  return{x:sx,y:sy,scale};
+}
+
+function startGame(mode){
+  lastMode=mode;
+  py=LANE_BOT;gravDir=1;vy=0;
+  score=0;coins=0;combo=1;comboTimer=0;distance=0;
+  obstacles=[];coinObjs=[];spawnTimer=0;speed=5;
+  running=true;
+  document.getElementById('menu').style.display='none';
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  setupInput(mode);
+  updateHUD();
+}
+
+function flipGravity(){if(!running)return;gravDir=-gravDir;showNotify('FLIP!');}
+
+function setupInput(mode){
+  window.addEventListener('keydown',e=>{if(e.key===' '||e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();flipGravity();}});
+  canvas.addEventListener('click',flipGravity);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();flipGravity();},{passive:false});
+}
+
+function spawnObstacle(){
+  const gap=.7; // gap size in world units
+  const yPos=Math.random()<.5?LANE_TOP:LANE_BOT;
+  const isCoin=Math.random()<.25;
+  if(isCoin){
+    coinObjs.push({x:0,y:yPos,z:OBS_SPAWN_Z,r:.15,hit:false});
+  } else {
+    // Obstacle: two blocks with gap in middle, gap at top or bottom lane
+    const gapAtTop=Math.random()<.5;
+    obstacles.push({x:0,z:OBS_SPAWN_Z,gapAtTop,w:.7,passed:false});
+  }
+}
+
+function updateObstacles(){
+  const s=speed/FOV;
+  speed=Math.min(12,5+distance*.002);
+  for(let i=obstacles.length-1;i>=0;i--){
+    const o=obstacles[i];
+    o.z-=speed*.06;
+    // Pass check
+    if(!o.passed&&o.z<PLAYER_Z+.5){
+      o.passed=true;
+      distance++;score+=combo;
+      combo=Math.min(combo+1,8);comboTimer=200;
+      showNotify(`x${combo} COMBO!`);
+      updateHUD();
+    }
+    // Hit check — player at py
+    if(o.z<PLAYER_Z+.3&&o.z>PLAYER_Z-.4){
+      // Does gap cover player y?
+      const gapY=o.gapAtTop?LANE_TOP:LANE_BOT;
+      if(Math.abs(py-gapY)>0.35){triggerDeath();return;}
+    }
+    if(o.z<PLAYER_Z-2)obstacles.splice(i,1);
+  }
+  for(let i=coinObjs.length-1;i>=0;i--){
+    const co=coinObjs[i];
+    co.z-=speed*.06;
+    if(!co.hit&&co.z<PLAYER_Z+.3&&Math.abs(py-co.y)<.35){
+      co.hit=true;coins++;score+=5*combo;showNotify('+COIN 💰');updateHUD();
+    }
+    if(co.z<PLAYER_Z-2)coinObjs.splice(i,1);
+  }
+}
+
+function triggerDeath(){
+  running=false;
+  if(score>bestScore)bestScore=score;
+  document.getElementById('hud').style.display='none';
+  document.getElementById('goScore').textContent=score;
+  document.getElementById('gameOver').style.display='flex';
+}
+
+function showNotify(txt){const el=document.getElementById('notify');el.textContent=txt;el.classList.add('show');notifyTimer=90;}
+
+function updateHUD(){
+  document.getElementById('hScore').textContent=score;
+  document.getElementById('hBest').textContent=bestScore;
+  document.getElementById('hCoins').textContent=coins;
+  document.getElementById('hCombo').textContent=`x${combo}`;
+}
+
+// ===== DRAW =====
+function drawTunnel(){
+  // Draw receding corridor walls/floor/ceiling
+  const NUM=20;
+  for(let i=NUM;i>0;i--){
+    const wz=PLAYER_Z+1+i;
+    const alpha=.04+.03*(NUM-i)/NUM;
+    // Left wall panel
+    const p1=project(-1.2,-1,wz),p2=project(-1.2,1,wz),p3=project(-1.2,-1,wz+1),p4=project(-1.2,1,wz+1);
+    // Right wall
+    const r1=project(1.2,-1,wz),r2=project(1.2,1,wz);
+    // Floor
+    const f1=project(-1.2,1,wz),f2=project(1.2,1,wz),f3=project(-1.2,1,wz+1),f4=project(1.2,1,wz+1);
+    // Ceiling
+    const c1=project(-1.2,-1,wz),c2=project(1.2,-1,wz);
+
+    // Floor quad
+    ctx.beginPath();
+    ctx.moveTo(f1.x,f1.y);ctx.lineTo(f2.x,f2.y);
+    ctx.lineTo(project(1.2,1,wz+1).x,project(1.2,1,wz+1).y);ctx.lineTo(project(-1.2,1,wz+1).x,project(-1.2,1,wz+1).y);
+    ctx.closePath();ctx.fillStyle=`rgba(99,102,241,${alpha*.8})`;ctx.fill();
+    ctx.strokeStyle=`rgba(99,102,241,${alpha*2})`;ctx.lineWidth=.5;ctx.stroke();
+    // Ceiling quad
+    ctx.beginPath();
+    ctx.moveTo(c1.x,c1.y);ctx.lineTo(c2.x,c2.y);
+    ctx.lineTo(project(1.2,-1,wz+1).x,project(1.2,-1,wz+1).y);ctx.lineTo(project(-1.2,-1,wz+1).x,project(-1.2,-1,wz+1).y);
+    ctx.closePath();ctx.fillStyle=`rgba(163,122,250,${alpha*.6})`;ctx.fill();
+    ctx.strokeStyle=`rgba(163,122,250,${alpha*2})`;ctx.stroke();
+  }
+}
+
+function drawObstacles(){
+  for(const o of obstacles){
+    const z=o.z;if(z<=PLAYER_Z)continue;
+    const scale=FOV/(z-PLAYER_Z);
+    const screenX=W/2;
+    const screenY=H/2;
+    const hw=o.w*scale;
+    // Draw two blocks: one at top, one at bottom, with gap in between
+    const TOP_Y=H/2+LANE_TOP*scale;
+    const BOT_Y=H/2+LANE_BOT*scale;
+    const WALL_H=scale*.5;
+    ctx.save();ctx.fillStyle='#6366f1';ctx.shadowColor='#a78bfa';ctx.shadowBlur=scale*.3;
+    if(!o.gapAtTop){
+      // Gap at bottom — draw top block from ceiling to center
+      ctx.fillRect(screenX-hw*.5,TOP_Y-WALL_H*1.5,hw,WALL_H*2.5);
+    } else {
+      // Gap at top — draw bottom block from center to floor
+      ctx.fillRect(screenX-hw*.5,BOT_Y-WALL_H*.5,hw,WALL_H*2.5);
+    }
+    // Glow edges
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=Math.max(1,2*scale/100);
+    ctx.restore();
+    ctx.shadowBlur=0;
+  }
+}
+
+function drawCoins(){
+  for(const co of coinObjs){
+    if(co.hit)continue;
+    const sc=project(co.x,co.y,co.z);
+    if(sc.scale<=0)continue;
+    const r=Math.max(3,co.r*sc.scale);
+    ctx.save();ctx.fillStyle='#f59e0b';ctx.shadowColor='#fbbf24';ctx.shadowBlur=r*1.5;
+    ctx.beginPath();ctx.arc(sc.x,sc.y,r,0,Math.PI*2);ctx.fill();
+    ctx.restore();ctx.shadowBlur=0;
+  }
+}
+
+function drawPlayer(){
+  const ps=project(0,py,PLAYER_Z+2);
+  // Player cube at fixed near position
+  const s=40;
+  const sx=W*.38,sy=H/2-py*200;
+  ctx.save();
+  const g=ctx.createLinearGradient(sx-s/2,sy-s/2,sx+s/2,sy+s/2);
+  g.addColorStop(0,'#818cf8');g.addColorStop(1,'#6366f1');
+  ctx.fillStyle=g;ctx.shadowColor='#818cf8';ctx.shadowBlur=25;
+  ctx.fillRect(sx-s/2,sy-s/2,s,s);
+  // Gravity direction arrow
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='bold 18px Segoe UI';ctx.textAlign='center';
+  ctx.fillText(gravDir>0?'▼':'▲',sx,sy+6);
+  ctx.restore();ctx.shadowBlur=0;
+}
+
+function draw(){
+  ctx.fillStyle='#0a0a18';ctx.fillRect(0,0,W,H);
+  // Stars bg
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.4)';
+  for(let i=0;i<40;i++){const x=((i*137+score*1.7)%W),y=((i*97+score*.9)%H);ctx.fillRect(x,y,1,1);}
+  ctx.restore();
+  drawTunnel();
+  drawObstacles();
+  drawCoins();
+  drawPlayer();
+  // Gravity lane indicators
+  ctx.save();ctx.strokeStyle='rgba(99,102,241,.25)';ctx.lineWidth=2;ctx.setLineDash([8,6]);
+  ctx.beginPath();ctx.moveTo(0,H/2+LANE_TOP*200);ctx.lineTo(W,H/2+LANE_TOP*200);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,H/2+LANE_BOT*200);ctx.lineTo(W,H/2+LANE_BOT*200);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+}
+
+function update(){
+  // Gravity physics
+  vy+=gravDir*.025;
+  py+=vy;
+  const limit=LANE_BOT;
+  if(py>=limit){py=limit;vy=0;}
+  if(py<=LANE_TOP){py=LANE_TOP;vy=0;}
+  // Spawn obstacles
+  spawnTimer++;
+  const interval=Math.max(40,80-distance*.5);
+  if(spawnTimer>=interval){spawnTimer=0;spawnObstacle();}
+  updateObstacles();
+  // Combo decay
+  if(comboTimer>0){comboTimer--;if(comboTimer===0){combo=1;updateHUD();}}
+  // Notify timer
+  if(notifyTimer>0){notifyTimer--;if(notifyTimer===0)document.getElementById('notify').classList.remove('show');}
+}
+
+function loop(){
+  if(running)update();
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -98,6 +98,11 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
       <p>Mouse to aim and move, click to shoot</p>
       <div class="ctrls">Mouse — Aim & Move<br>Click — Fire<br>1-6 — Weapons<br>Space — Special</div>
     </div>
+    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.06)">
+      <div class="mi">🌐</div><h3>Online Co-op</h3>
+      <p>Survive waves together</p>
+      <div class="ctrls">Up to 6 players</div>
+    </div>
     <div class="mcard" onclick="startGame('mobile')">
       <div class="mi">📱</div><h3>Mobile Mode</h3>
       <p>Left joystick move, right side fire</p>
@@ -427,7 +432,7 @@ function update(){
       if(P.shield>0){const abs=Math.min(P.shield,dmg);P.shield-=abs;dmg-=abs;}
       P.hp-=dmg;P.invuln=45;
       spawnParticles(P.x,P.y,'#ef4444',15);
-      if(P.pattern==='kamikaze'){e.hp=0;}
+      if(e.pattern==='kamikaze'){e.hp=0;}
       updateHUD();if(P.hp<=0){gameOver();return;}
     }
   }
@@ -716,8 +721,61 @@ function notify(msg){const el=document.getElementById('notify');el.textContent=m
 function loop(){
   if(running)update();
   draw();
+  mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;mpSendState();}
   requestAnimationFrame(loop);
 }
+
+// ===== ONLINE MULTIPLAYER (Co-op) =====
+const MP_WORKER='https://germ-fun.kennardxia.workers.dev';
+const MP_GAME='bulletstorm';
+let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
+function openMultiplayer(){
+  let ov=document.getElementById('mpOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='mpOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#f472b6">🌐 Co-op Multiplayer</h2><p style="color:#64748b">Survive waves together — up to 6 players</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">CREATE ROOM</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#f472b6,#7c3aed);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">JOIN ROOM</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#f472b6,#7c3aed);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer">✕ Close</button>';
+    document.body.appendChild(ov);
+  }else{ov.style.display='flex';}
+}
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{const r=await fetch(`${MP_WORKER}/room/create?game=${MP_GAME}`,{method:'POST'});if(!r.ok)throw 0;const {code}=await r.json();document.getElementById('mpCode').textContent=code;document.getElementById('mpCode').style.display='block';mpConnect(code);}catch{setMpStatus('⚠ Server unreachable. Play offline.');}
+}
+function mpJoin(){const c=document.getElementById('mpCodeInput').value.trim().toUpperCase();if(c.length!==6){setMpStatus('Enter 6 chars');return;}mpConnect(c);}
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){mpWs.close();}
+  try{mpWs=new WebSocket(`${MP_WORKER.replace('https','wss')}/room/${code}/ws?game=${MP_GAME}`);
+    mpWs.onopen=()=>setMpStatus('Connected to '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>{let d;try{d=JSON.parse(ev.data);}catch{return;}if(!d||typeof d!=='object')return;
+      if(d.type==='welcome'){mpPlayerId=d.id;mpConnected=true;setMpStatus(`✓ In room (Player ${d.count})`);document.getElementById('mpOverlay').style.display='none';startGame('pc');}
+      else if(d.type==='leave'){delete mpPeers[d.id];}
+      else if(d.type==='state'&&d.from&&d.from!==mpPlayerId){
+        const W2=canvas?canvas.width:600,H2=canvas?canvas.height:600;
+        mpPeers[d.from]={x:Math.max(0,Math.min(W2,+d.x||0)),y:Math.max(0,Math.min(H2,+d.y||0)),hp:Math.max(0,Math.min(200,+d.hp||0)),score:Math.max(0,+d.score||0),alive:!!d.alive};}
+    };
+  }catch{setMpStatus('⚠ WebSocket unavailable');}
+}
+function mpSendState(){
+  if(!mpWs||!mpConnected||mpWs.readyState!==1)return;
+  try{const c2=canvas;mpWs.send(JSON.stringify({type:'state',x:P.x,y:P.y,hp:P.hp,score:score,alive:!gameOver}));}catch{}
+}
+function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
+// Draw co-op peers on canvas (drawn in draw() via hook — simple dot rendering)
+const _bsOrigDraw=draw;
+draw=function(){
+  _bsOrigDraw();
+  if(!mpConnected)return;
+  for(const id in mpPeers){
+    const p=mpPeers[id];if(!p.alive)continue;
+    ctx.save();ctx.globalAlpha=.7;ctx.fillStyle='#10b981';ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 9px Segoe UI';ctx.textAlign='center';ctx.fillText('🌐',p.x,p.y-14);ctx.restore();
+  }
+};
 </script>
 </body>
 </html>

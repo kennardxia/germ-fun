@@ -1,1 +1,20 @@
-{"name":"germ-fun","compatibility_date":"2026-05-20","assets":{"directory":"."}}
+{
+  "name": "germ-fun",
+  "compatibility_date": "2026-05-20",
+  "main": "workers/game-server.js",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "GAME_ROOM", "class_name": "GameRoom" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["GameRoom"] }
+  ],
+  "limits": {
+    "cpu_ms": 50
+  }
+}

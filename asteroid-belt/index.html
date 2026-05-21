@@ -1,70 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Asteroid Belt — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(132,204,22,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(132,204,22,.15);border:1px solid rgba(132,204,22,.4);color:#bef264;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(132,204,22,.08);border:1px solid rgba(132,204,22,.2);color:#bef264;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#bef264}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Asteroid Belt — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#060610;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block;touch-action:none}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(251,191,36,.06) 0%,transparent 70%),#060610;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#fbbf24}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#fbbf24,#f97316);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;transition:.2s}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#fbbf24}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>☄️ ASTEROID BELT</h1><p style="color:#64748b">Destroy asteroids — 5 weapons — survive the belt</p><div class="mrow"><div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div><h3>PC Mode</h3><p>WASD + mouse aim + click fire</p></div><div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile</h3><p>Joystick + tap fire</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">Score <span class="hv" id="hS">0</span></div><div class="hb">HP <span class="hv" id="hH">100</span></div><div class="hb">Wave <span class="hv" id="hW">1</span></div><div class="hb">Weapon <span class="hv" id="hWp">Laser</span></div></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#fbbf24">DESTROYED</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame(lastMode)">↩ Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">☄️</div>
-  <h1>ASTEROID BELT</h1>
-  <p>Classic Asteroids, reborn. Infinite waves, power-up crates, leaderboards, and a fully destructible asteroid physics system unlike anything you've seen.</p>
-  <div class="features">
-    <span class="feat">☄️ Physics Rocks</span>
-    <span class="feat">🚀 Ship Mods</span>
-    <span class="feat">🏆 Leaderboard</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">🎮 PC + Mobile</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#84cc16';
-const asts=[];
-for(let i=0;i<15;i++){
-  const verts=[];const n=6+Math.floor(Math.random()*4);for(let j=0;j<n;j++){const a=j/n*Math.PI*2;const r=20+Math.random()*25;verts.push({a,r});}
-  asts.push({x:Math.random()*1200,y:Math.random()*800,vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.015,verts,size:20+Math.random()*30});
-}
-let t=0;
-function loop(){
-  t+=.016;
-  ctx.fillStyle='rgba(1,5,0,.18)';ctx.fillRect(0,0,W,H);
-  // Stars
-  if(t<.1){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);}
-  asts.forEach(a=>{
-    a.x+=a.vx;a.y+=a.vy;a.rot+=a.rotSpd;
-    if(a.x<-60)a.x=W+60;if(a.x>W+60)a.x=-60;if(a.y<-60)a.y=H+60;if(a.y>H+60)a.y=-60;
-    const ax=a.x*W/1200,ay=a.y*H/800,sc=a.size*Math.min(W,H)/600;
-    ctx.save();ctx.translate(ax,ay);ctx.rotate(a.rot);ctx.beginPath();
-    a.verts.forEach((v,i)=>{const x=Math.cos(v.a+a.rot)*v.r*(sc/20);const y=Math.sin(v.a+a.rot)*v.r*(sc/20);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.closePath();ctx.fillStyle=COL+'22';ctx.strokeStyle=COL+'99';ctx.lineWidth=1.5;ctx.fill();ctx.stroke();
-    ctx.restore();
-  });
-  // Orbital ring
-  const orR=Math.min(W,H)*.35;
-  ctx.beginPath();ctx.arc(W/2,H/2,orR,0,Math.PI*2);ctx.strokeStyle=COL+'18';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.stroke();ctx.setLineDash([]);
-  requestAnimationFrame(loop);
-}
-loop();
-</script>
-</body>
-</html>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const WEAPONS=[{name:'Laser',dmg:15,rate:8,spd:10,col:'#fbbf24'},{name:'Cannon',dmg:40,rate:20,spd:8,col:'#f97316'},{name:'Spread',dmg:12,rate:12,spd:9,col:'#38bdf8'},{name:'Missile',dmg:80,rate:50,spd:6,col:'#a78bfa'},{name:'Nuke',dmg:200,rate:120,spd:4,col:'#f472b6'}];
+let ship,asteroids=[],bullets=[],score=0,wave=0,running=false,lastMode='pc',mx=300,my=300,fireHeld=false;
+const keys={};
+function mkShip(){return{x:W/2,y:H/2,vx:0,vy:0,angle:0,hp:100,maxHp:100,fireTimer:0,wpn:0};}
+function startGame(m){lastMode=m;ship=mkShip();asteroids=[];bullets=[];score=0;wave=0;running=true;document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('hud').style.display='flex';spawnWave();}
+function spawnWave(){wave++;for(let i=0;i<wave*3+4;i++)spawnAsteroid();document.getElementById('hW').textContent=wave;}
+function spawnAsteroid(parent){const r=parent?(parent.r*.6):(30+Math.random()*40);const angle=Math.random()*Math.PI*2;const dist=parent?0:(Math.max(W,H)*.6);const x=parent?parent.x+Math.cos(angle)*30:(W/2+Math.cos(angle)*dist);const y=parent?parent.y+Math.sin(angle)*30:(H/2+Math.sin(angle)*dist);const spd=(.5+Math.random())*2;const dir=Math.atan2(H/2-y,W/2-x)+(Math.random()-.5)*.8;asteroids.push({x,y,vx:Math.cos(dir)*spd,vy:Math.sin(dir)*spd,r,hp:r*1.5,rot:0,rotSpd:(Math.random()-.5)*.04,children:parent?0:2,col:'hsl('+(25+Math.random()*20)+',60%,'+(35+Math.random()*20)+'%)'});}
+canvas.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['1','2','3','4','5'].includes(e.key)&&ship)ship.wpn=+e.key-1;});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener('mousedown',e=>{if(e.button===0)fireHeld=true;});canvas.addEventListener('mouseup',e=>{if(e.button===0)fireHeld=false;});
+function update(){ship.angle=Math.atan2(my-ship.y,mx-ship.x);if(keys.w||keys.arrowup){ship.vx+=Math.cos(ship.angle)*.18;ship.vy+=Math.sin(ship.angle)*.18;}if(keys.s||keys.arrowdown){ship.vx*=.94;ship.vy*=.94;}ship.vx*=.985;ship.vy*=.985;ship.x=(ship.x+ship.vx+W)%W;ship.y=(ship.y+ship.vy+H)%H;ship.fireTimer=Math.max(0,ship.fireTimer-1);if((fireHeld||keys[' '])&&ship.fireTimer===0){const w=WEAPONS[ship.wpn];const shots=ship.wpn===2?5:1;for(let i=0;i<shots;i++){const a=ship.angle+(ship.wpn===2?(i-2)*.15:0);bullets.push({x:ship.x,y:ship.y,vx:Math.cos(a)*w.spd+ship.vx*.3,vy:Math.sin(a)*w.spd+ship.vy*.3,dmg:w.dmg,col:w.col,life:80,r:ship.wpn===4?18:4});}ship.fireTimer=w.rate;}for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx;b.y+=b.vy;b.life--;if(b.life<=0||b.x<0||b.x>W||b.y<0||b.y>H){bullets.splice(i,1);continue;}let hit=false;for(let j=asteroids.length-1;j>=0;j--){const a=asteroids[j];if(Math.hypot(b.x-a.x,b.y-a.y)<a.r+b.r){a.hp-=b.dmg;hit=true;if(a.hp<=0){score+=Math.ceil(a.r);if(a.children>0)for(let k=0;k<a.children;k++)spawnAsteroid(a);asteroids.splice(j,1);}break;}}if(hit&&ship.wpn!==2)bullets.splice(i,1);}for(const a of asteroids){a.x=(a.x+a.vx+W)%W;a.y=(a.y+a.vy+H)%H;a.rot+=a.rotSpd;if(Math.hypot(a.x-ship.x,a.y-ship.y)<a.r+16){ship.hp-=.5;if(ship.hp<=0)endGame();}}if(asteroids.length===0)spawnWave();document.getElementById('hS').textContent=score;document.getElementById('hH').textContent=Math.ceil(ship.hp);document.getElementById('hWp').textContent=WEAPONS[ship.wpn].name;}
+function endGame(){running=false;document.getElementById('hud').style.display='none';document.getElementById('goS').textContent=score;document.getElementById('gameOver').style.display='flex';}
+function draw(){ctx.fillStyle='#060610';ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(255,255,255,.5)';for(let i=0;i<60;i++)ctx.fillRect((i*137)%W,(i*97)%H,1,1);for(const a of asteroids){ctx.save();ctx.translate(a.x,a.y);ctx.rotate(a.rot);ctx.fillStyle=a.col;ctx.shadowColor=a.col;ctx.shadowBlur=8;ctx.beginPath();const pts=7;for(let i=0;i<pts;i++){const ang=i/pts*Math.PI*2;const r=a.r*(0.8+Math.sin(i*2.3)*.2);i===0?ctx.moveTo(Math.cos(ang)*r,Math.sin(ang)*r):ctx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r);}ctx.closePath();ctx.fill();ctx.restore();ctx.shadowBlur=0;}for(const b of bullets){ctx.save();ctx.fillStyle=b.col;ctx.shadowColor=b.col;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;}if(ship){ctx.save();ctx.translate(ship.x,ship.y);ctx.rotate(ship.angle);ctx.fillStyle='#06b6d4';ctx.shadowColor='#06b6d4';ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(22,0);ctx.lineTo(-14,12);ctx.lineTo(-8,0);ctx.lineTo(-14,-12);ctx.closePath();ctx.fill();ctx.restore();ctx.shadowBlur=0;ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(ship.x-25,ship.y-28,50,5);ctx.fillStyle='#34d399';ctx.fillRect(ship.x-25,ship.y-28,50*(ship.hp/ship.maxHp),5);}}
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>

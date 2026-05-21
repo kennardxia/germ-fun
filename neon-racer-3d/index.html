@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Racer 3D — germ.fun</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+canvas{display:block;touch-action:none;image-rendering:pixelated}
+#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(6,182,212,.08) 0%,transparent 70%),#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}
+#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#06b6d4,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}
+.mcard:hover,.mcard.sel{background:rgba(6,182,212,.08);border-color:rgba(6,182,212,.4)}
+.mrow{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center}
+.mi{font-size:2rem;margin-bottom:.3rem}
+.mcard h3{font-size:.88rem;font-weight:700;color:#06b6d4}
+.mcard p{font-size:.72rem;color:#64748b;margin-top:.2rem}
+.mbtn{background:linear-gradient(135deg,#06b6d4,#7c3aed);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;transition:.2s}
+.mbtn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(6,182,212,.3)}
+.sec{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#475569}
+#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:50}
+.hb{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}
+.hv{font-size:1.1rem;font-weight:900;color:#06b6d4}
+#countDown{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:clamp(5rem,15vw,10rem);font-weight:900;color:#fff;opacity:0;z-index:50;text-shadow:0 0 60px #06b6d4;pointer-events:none;transition:.1s}
+#notify{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(6,182,212,.9);padding:.35rem 1rem;border-radius:14px;font-size:.8rem;font-weight:700;z-index:300;opacity:0;transition:.25s;pointer-events:none}
+#notify.show{opacity:1}
+#finish{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}
+#finish h2{font-size:2.5rem;font-weight:900;color:#06b6d4}
+</style>
+</head>
+<body>
+<div id="menu">
+  <h1>🏎️ NEON RACER 3D</h1>
+  <p style="color:#64748b">Pseudo-3D behind-car racing — F-Zero style</p>
+  <div class="sec">Track</div>
+  <div class="mrow" id="trackRow">
+    <div class="mcard sel" data-t="0" onclick="pickT(this,0)"><div class="mi">🔵</div><h3>Neon City</h3><p>Technical bends</p></div>
+    <div class="mcard" data-t="1" onclick="pickT(this,1)"><div class="mi">🟡</div><h3>Desert Run</h3><p>High speed oval</p></div>
+    <div class="mcard" data-t="2" onclick="pickT(this,2)"><div class="mi">🟣</div><h3>Storm Circuit</h3><p>Tight chicanes</p></div>
+  </div>
+  <button class="mbtn" onclick="startGame()">▶ RACE</button>
+  <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
+  <a href="../neon-racer-2d/" style="color:#475569;font-size:.78rem">▶ Play 2D version</a>
+</div>
+
+<div id="hud" style="display:none">
+  <div class="hb">Lap <span class="hv" id="hLap">1/3</span></div>
+  <div class="hb">⏱ <span class="hv" id="hTime">0:00.000</span></div>
+  <div class="hb">Pos <span class="hv" id="hPos">1/4</span></div>
+  <div class="hb">Speed <span class="hv" id="hSpd">0</span> <span style="color:#475569;font-size:.65rem">km/h</span></div>
+  <div class="hb">NITRO <span class="hv" id="hNitro" style="color:#f59e0b">▓▓▓▓▓</span></div>
+</div>
+
+<div id="countDown"></div>
+<div id="notify"></div>
+
+<div id="finish">
+  <h2>🏆 RACE OVER</h2>
+  <div style="font-size:1rem;color:#94a3b8">Your time: <span id="finTime" style="color:#f59e0b;font-weight:900"></span></div>
+  <button class="mbtn" onclick="startGame()">↩ Race Again</button>
+  <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
+</div>
+
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+
+// Track definitions — series of segments: curve (-1..1), uphill (-1..1), color index
+const TRACKS=[
+  // Neon City
+  Array.from({length:300},(_,i)=>{
+    const t=i/300;
+    return{curve:Math.sin(t*Math.PI*4)*.8+Math.sin(t*Math.PI*7)*.3,uphill:Math.sin(t*Math.PI*3)*.15,col:i%20<10?0:1};
+  }),
+  // Desert Run
+  Array.from({length:300},(_,i)=>{
+    const t=i/300;
+    return{curve:Math.sin(t*Math.PI*2.5)*.5,uphill:Math.cos(t*Math.PI*2)*.05,col:i%20<10?2:3};
+  }),
+  // Storm Circuit
+  Array.from({length:300},(_,i)=>{
+    const t=i/300;
+    return{curve:(Math.sin(t*Math.PI*6)>.3?1:Math.sin(t*Math.PI*6)<-.3?-1:0)*.9,uphill:Math.sin(t*Math.PI*5)*.18,col:i%20<10?4:5};
+  }),
+];
+const SEG_COLORS=[
+  ['#0d1520','#1e3a5f'],['#0a1a30','#172d50'], // neon city
+  ['#1a1205','#2d1e08'],['#261a07','#3d2a0c'], // desert
+  ['#12082a','#1e0f42'],['#1a0a35','#280f50'], // storm
+];
+const ROAD_COLORS=['#1a2a3a','#142030','#2a1a08','#1e140a','#1a0a2a','#140820'];
+const STRIPE_COLORS=['#38bdf8','#0ea5e9','#fbbf24','#f59e0b','#a78bfa','#7c3aed'];
+
+const SEG_H=1.5; // world height per segment
+const CAM_DEPTH=0.84;
+const DRAW_DIST=200;
+const TRACK_W=1000;
+const TOTAL_LAPS=3;
+
+let player,ai=[],track,trackIdx=0;
+let running=false,started=false;
+let raceTime=0,countTimer=0;
+let notifyTimer=0;
+
+function pickT(el,t){trackIdx=t;document.querySelectorAll('#trackRow .mcard').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');}
+
+function mkCar(isPlayer,offset){
+  return{pos:offset||0,x:0,speed:isPlayer?0:2+Math.random()*.5,angle:0,
+    lap:1,lapTime:0,finished:false,totalTime:0,bestLap:99999,nitro:100,
+    isPlayer,col:isPlayer?'#06b6d4':'#f87171',
+    ai_steer:0};
+}
+
+function startGame(){
+  track=TRACKS[trackIdx];
+  player=mkCar(true,0);
+  ai=[mkCar(false,50),mkCar(false,100),mkCar(false,150)];
+  running=false;started=false;raceTime=0;
+  document.getElementById('menu').style.display='none';
+  document.getElementById('finish').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  setupInput();
+  countDown(3);
+}
+
+const keys={};
+function setupInput(){
+  window.addEventListener('keydown',e=>keys[e.key]=true);
+  window.addEventListener('keyup',e=>keys[e.key]=false);
+}
+
+function countDown(n){
+  const el=document.getElementById('countDown');
+  el.textContent=n;el.style.opacity='1';
+  setTimeout(()=>{el.style.opacity='0';},700);
+  if(n>0)setTimeout(()=>countDown(n-1),900);
+  else setTimeout(()=>{el.textContent='GO!';el.style.opacity='1';setTimeout(()=>el.style.opacity='0',600);running=true;started=true;},900);
+}
+
+function getSegment(pos){
+  const idx=Math.floor(pos/SEG_H)%track.length;
+  return track[(idx+track.length)%track.length];
+}
+
+function updateCar(car){
+  const seg=getSegment(car.pos);
+  if(car.isPlayer){
+    let accel=0;
+    if(keys['ArrowUp']||keys['w']||keys['W']){accel=.15;}
+    if(keys['ArrowDown']||keys['s']||keys['S']){accel=-.1;}
+    car.speed+=accel;
+    car.speed=Math.max(0,Math.min(8+(keys[' ']&&car.nitro>0?3:0),car.speed));
+    if(car.speed>0&&!accel)car.speed*=.97;
+    // Nitro
+    if(keys[' ']&&car.nitro>0&&car.speed>3){car.nitro=Math.max(0,car.nitro-1);}
+    else if(!keys[' '])car.nitro=Math.min(100,car.nitro+.2);
+    // Steer
+    if(keys['ArrowLeft']||keys['a']||keys['A'])car.x-=.04*car.speed;
+    if(keys['ArrowRight']||keys['d']||keys['D'])car.x+=.04*car.speed;
+    // Road curve pushes car
+    car.x-=seg.curve*.1*car.speed*.08;
+    car.x=Math.max(-1.5,Math.min(1.5,car.x));
+  } else {
+    // AI — follow curve, random speed variation
+    car.speed=Math.min(5.5,car.speed+.05*(Math.random()<.5?1:0));
+    car.ai_steer+=((-seg.curve*.8)-car.x)*.1;
+    car.x+=car.ai_steer*.2;
+    car.x=Math.max(-1.5,Math.min(1.5,car.x));
+  }
+  car.pos+=car.speed*SEG_H*.03;
+  const totalLen=track.length*SEG_H;
+  if(car.pos>=totalLen){
+    car.pos%=totalLen;
+    if(started){
+      const lt=raceTime-car.lapTime;
+      if(lt>2){
+        car.lapTime=raceTime;
+        if(lt<car.bestLap)car.bestLap=lt;
+        car.lap++;
+        if(car.lap>TOTAL_LAPS){car.finished=true;car.totalTime=raceTime;if(car.isPlayer)finishRace();}
+        if(car.isPlayer)showNotify(`Lap ${Math.min(car.lap,TOTAL_LAPS)}/${TOTAL_LAPS}`);
+      }
+    }
+  }
+}
+
+function finishRace(){running=false;document.getElementById('hud').style.display='none';document.getElementById('finTime').textContent=formatTime(raceTime);document.getElementById('finish').style.display='flex';}
+
+function showNotify(txt){const el=document.getElementById('notify');el.textContent=txt;el.classList.add('show');notifyTimer=120;}
+
+function formatTime(t){const s=t/60;const m=Math.floor(s/60);const sec=s%60;return`${m}:${sec.toFixed(3).padStart(6,'0')}`;}
+
+function updateHUD(){
+  if(!player)return;
+  document.getElementById('hLap').textContent=`${Math.min(player.lap,TOTAL_LAPS)}/${TOTAL_LAPS}`;
+  document.getElementById('hTime').textContent=formatTime(raceTime);
+  const kph=Math.round(player.speed*28);document.getElementById('hSpd').textContent=kph;
+  const nitroFull=Math.round(player.nitro/20);document.getElementById('hNitro').textContent='▓'.repeat(nitroFull)+'░'.repeat(5-nitroFull);
+  // Position
+  const cars=[player,...ai].filter(c=>!c.finished).sort((a,b)=>b.pos-a.pos);
+  const pos=cars.indexOf(player)+1;
+  document.getElementById('hPos').textContent=`${pos}/${cars.length+[player,...ai].filter(c=>c.finished).length}`;
+}
+
+// ===== RENDERER: strip-based pseudo-3D =====
+function projectSegment(playerPos,idx,curveX){
+  // idx: how far ahead (0=undercar, DRAW_DIST=horizon)
+  const depth=idx/DRAW_DIST;
+  if(depth<=0)return null;
+  const cameraHeight=1500;
+  const scale=CAM_DEPTH/depth;
+  const screenX=W/2+(curveX)*scale;
+  const screenY=H/2-cameraHeight*scale;
+  const roadW=TRACK_W*scale;
+  return{x:screenX,y:screenY,scale,roadW};
+}
+
+function draw3D(){
+  // Sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H*.6);
+  sky.addColorStop(0,'#0a0510');sky.addColorStop(.6,'#0d1020');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  // Ground
+  ctx.fillStyle='#080810';ctx.fillRect(0,H*.5,W,H*.5);
+
+  const totalLen=track.length*SEG_H;
+  let curveAcc=0;
+  let hillAcc=0;
+  let prevY=H;
+
+  // Draw strips from horizon to near
+  for(let n=DRAW_DIST;n>0;n--){
+    const segIdx=Math.floor((player.pos+n*SEG_H)/SEG_H)%track.length;
+    const seg=track[(segIdx+track.length)%track.length];
+    curveAcc+=seg.curve*2*(1-n/DRAW_DIST);
+    hillAcc+=seg.uphill*30*(1-n/DRAW_DIST);
+
+    const depth=n/DRAW_DIST;
+    const scale=CAM_DEPTH/depth;
+    const cameraH=500+hillAcc;
+    const sy=Math.floor(H*.55-cameraH*scale);
+    const roadW=TRACK_W*scale;
+    const midX=W/2-curveAcc*scale;
+
+    if(sy>=prevY)continue;
+
+    // Road strip
+    const ci=seg.col;
+    ctx.fillStyle=ROAD_COLORS[ci];
+    ctx.fillRect(midX-roadW*.5,sy,roadW,Math.max(1,prevY-sy));
+
+    // Road stripes
+    if(segIdx%10<5){
+      ctx.fillStyle=STRIPE_COLORS[ci];
+      ctx.fillRect(midX-roadW*.02,sy,roadW*.04,Math.max(1,prevY-sy));
+    }
+    // Grass / shoulder
+    ctx.fillStyle=depth<.5?'#0a1505':'#080e04';
+    ctx.fillRect(0,sy,midX-roadW*.5,Math.max(1,prevY-sy));
+    ctx.fillRect(midX+roadW*.5,sy,W-(midX+roadW*.5),Math.max(1,prevY-sy));
+
+    prevY=sy;
+  }
+
+  // Draw cars (simple scaled boxes at their relative position)
+  const allCars=[...ai,player];
+  for(const car of allCars){
+    if(car===player)continue;
+    const relPos=(car.pos-player.pos+totalLen)%totalLen;
+    if(relPos>DRAW_DIST*SEG_H||relPos<0)continue;
+    const n=relPos/SEG_H;
+    const depth=n/DRAW_DIST;if(depth<.01)continue;
+    const scale=CAM_DEPTH/depth;
+    const sw=Math.max(2,80*scale),sh=Math.max(2,40*scale);
+    const curveOff=0;
+    const sx=W/2+car.x*TRACK_W*.5*scale-curveOff;
+    const sy2=H*.55-500*scale;
+    ctx.save();
+    ctx.fillStyle=car.col;ctx.shadowColor=car.col;ctx.shadowBlur=10*scale;
+    ctx.fillRect(sx-sw/2,sy2-sh,sw,sh);
+    ctx.restore();
+  }
+
+  // Draw player car at bottom
+  ctx.save();
+  ctx.fillStyle='#06b6d4';ctx.shadowColor='#06b6d4';ctx.shadowBlur=20;
+  const cx=W/2+player.x*200;
+  const cy=H*.88;
+  // Car body
+  ctx.fillRect(cx-40,cy-28,80,28);
+  // Windscreen
+  ctx.fillStyle='rgba(56,189,248,.4)';ctx.fillRect(cx-22,cy-42,44,16);
+  // Wheels
+  ctx.fillStyle='#1e293b';
+  [[cx-36,cy],[cx+36,cy],[cx-30,cy-4],[cx+30,cy-4]].forEach(([wx,wy])=>{ctx.beginPath();ctx.ellipse(wx,wy,9,5,0,0,Math.PI*2);ctx.fill();});
+  // Nitro glow
+  if(keys[' ']&&player.nitro>0){
+    ctx.fillStyle='rgba(251,191,36,.8)';ctx.shadowColor='#fbbf24';ctx.shadowBlur=30;
+    ctx.beginPath();ctx.ellipse(cx,cy+4,8,20,.1*Math.PI,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+  ctx.shadowBlur=0;
+
+  // Minimap
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.roundRect(W-90,H-90,80,80,8);ctx.fill();ctx.stroke();
+  const mapS=30;const mapX=W-50,mapY=H-50;
+  ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<track.length;i++){
+    const a=i/track.length*Math.PI*2;
+    const r=mapS*(1+track[i].curve*.15);
+    const px2=mapX+Math.cos(a)*r,py2=mapY+Math.sin(a)*r;
+    i===0?ctx.moveTo(px2,py2):ctx.lineTo(px2,py2);
+  }ctx.closePath();ctx.stroke();
+  const pA=player.pos/(track.length*SEG_H)*Math.PI*2;
+  const pr=mapS*(1+getSegment(player.pos).curve*.15);
+  ctx.fillStyle='#06b6d4';ctx.shadowColor='#06b6d4';ctx.shadowBlur=8;
+  ctx.beginPath();ctx.arc(mapX+Math.cos(pA)*pr,mapY+Math.sin(pA)*pr,4,0,Math.PI*2);ctx.fill();
+  ctx.restore();ctx.shadowBlur=0;
+}
+
+function loop(){
+  if(running){
+    raceTime++;
+    updateCar(player);
+    for(const a of ai)updateCar(a);
+    if(notifyTimer>0){notifyTimer--;if(notifyTimer===0)document.getElementById('notify').classList.remove('show');}
+    updateHUD();
+  }
+  draw3D();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

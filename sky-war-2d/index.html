@@ -19,6 +19,7 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
 .mcard p{font-size:.68rem;color:#64748b}
 .sec{font-size:.65rem;font-weight:700;letter-spacing:.12em;color:#475569;text-transform:uppercase}
 .bigbtn{background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;transition:.2s}
+.bigbtn.sec2{background:linear-gradient(135deg,#10b981,#059669);}
 .bigbtn:hover{transform:scale(1.05)}
 .bigbtn.sec2{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1)}
 
@@ -88,6 +89,7 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
   </div>
   <div class="row">
     <button class="bigbtn" onclick="openPlaneSelect()">▶ SELECT PLANE</button>
+    <button class="bigbtn sec2" onclick="openMultiplayer()">🌐 Online</button>
     <a href="../" style="color:#475569;font-size:.82rem;align-self:center;text-decoration:none">← Games</a>
   </div>
 </div>
@@ -100,6 +102,29 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
     <button class="bigbtn" onclick="startGame()">▶ FLY!</button>
     <button class="bigbtn sec2" onclick="document.getElementById('planeSelect').style.display='none'">← Back</button>
   </div>
+</div>
+
+<!-- Multiplayer overlay -->
+<div id="mpOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)">
+  <h2 style="font-size:1.8rem;font-weight:900;color:#38bdf8">🌐 Online Multiplayer</h2>
+  <p style="color:#64748b;font-size:.85rem;text-align:center">Up to 6 players — share the room code with friends</p>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">
+    <div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px">
+      <div style="font-size:.7rem;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Create Room</div>
+      <button class="bigbtn" onclick="mpCreate()" style="padding:.6rem 1.4rem;font-size:.9rem">+ Create</button>
+      <div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div>
+      <div id="mpCodeHint" style="font-size:.65rem;color:#64748b;margin-top:.3rem;display:none">Share this code!</div>
+    </div>
+    <div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px">
+      <div style="font-size:.7rem;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Join Room</div>
+      <input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase;letter-spacing:.15em">
+      <br><br>
+      <button class="bigbtn" onclick="mpJoin()" style="padding:.6rem 1.4rem;font-size:.9rem">→ Join</button>
+    </div>
+  </div>
+  <div id="mpStatus" style="font-size:.82rem;color:#94a3b8;min-height:1.2rem"></div>
+  <div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div>
+  <button class="bigbtn sec2" onclick="closeMpOverlay()" style="padding:.5rem 1.2rem;font-size:.85rem">✕ Close</button>
 </div>
 
 <canvas id="c"></canvas>
@@ -160,11 +185,11 @@ let p1PlaneIdx=0,p2PlaneIdx=1;
 let wave=1,totalCoins=0,kills1=0;
 
 const PLANE_TYPES=[
-  {name:'Fighter',hp:100,spd:4.5,fire:8,icon:'✈️',col:'#38bdf8',desc:'Balanced'},
-  {name:'Interceptor',hp:80,spd:6,fire:6,icon:'🛩️',col:'#f472b6',desc:'Fast'},
-  {name:'Bomber',hp:140,spd:3.2,fire:14,icon:'🛫',col:'#f59e0b',desc:'Tank'},
-  {name:'Ghost',hp:70,spd:5.5,fire:5,icon:'👻',col:'#a78bfa',desc:'Stealth'},
-  {name:'Dragon',hp:110,spd:4,fire:10,icon:'🐉',col:'#ef4444',desc:'Power'},
+  {name:'Fighter',hp:100,spd:4.5,fire:8,icon:'✈️',col:'#38bdf8',desc:'Balanced',aggression:.6},
+  {name:'Interceptor',hp:80,spd:6,fire:6,icon:'🛩️',col:'#f472b6',desc:'Fast',aggression:.8},
+  {name:'Bomber',hp:140,spd:3.2,fire:14,icon:'🛫',col:'#f59e0b',desc:'Tank',aggression:.45},
+  {name:'Ghost',hp:70,spd:5.5,fire:5,icon:'👻',col:'#a78bfa',desc:'Stealth',aggression:.75},
+  {name:'Dragon',hp:110,spd:4,fire:10,icon:'🐉',col:'#ef4444',desc:'Power',aggression:.9},
 ];
 const WEAPONS=[
   {name:'Bullets',col:'#38bdf8',spd:12,dmg:8,rad:3,auto:true,ammo:-1},
@@ -199,7 +224,7 @@ function makePlane(type,team,x,y,isAI){
     fireCd:0,fireRate:t.fire,
     team,name:t.name,col:t.col,icon:t.icon,type,
     isAI,
-    w:36,h:20,
+    w:52,h:28,
     facing:team===1?1:-1,
     wpnIdx:0,
     ammos:[...WEAPONS.map(w=>w.ammo)],
@@ -250,7 +275,6 @@ function resetGame(){
   for(let i=0;i<20;i++)bgObjects.push({x:Math.random()*W,y:Math.random()*H,type:Math.floor(Math.random()*3),spd:1+Math.random()*2,size:20+Math.random()*60});
   running=true;
   updateHUD();
-  requestAnimationFrame(loop);
 }
 
 const keys={};
@@ -301,30 +325,68 @@ function updateAI(p){
   if(!p.alive)return;
   const target=players[0];if(!target||!target.alive){p.vx*=.9;p.vy*=.9;return;}
   p.aiTimer--;
-  if(p.aiTimer<=0){
-    const r=Math.random();
-    if(r<.4)p.aiState='chase';else if(r<.7)p.aiState='circle';else p.aiState='dodge';
-    p.aiTimer=60+Math.random()*90;
-  }
   const dx=target.x-p.x,dy=target.y-p.y;
   const dist=Math.sqrt(dx*dx+dy*dy);
-  const acc=.25;
-  if(p.aiState==='chase'){
-    if(dist>80){p.vx+=dx/dist*acc;p.vy+=dy/dist*acc;}
-  } else if(p.aiState==='circle'){
-    const perp={x:-dy/dist,y:dx/dist};
-    p.vx+=perp.x*acc*1.4+dx/dist*acc*.3;p.vy+=perp.y*acc*1.4+dy/dist*acc*.3;
-  } else {
-    // dodge — move away from target
-    p.vx-=dx/dist*acc*.8;p.vy-=dy/dist*acc*.8;
+
+  // 5-state machine
+  if(p.aiTimer<=0){
+    const hpRatio=p.hp/p.maxHp;
+    if(hpRatio<.3) p.aiState='recover';
+    else{
+      const r=Math.random();
+      const aggression=PLANE_TYPES[p.type]?.aggression||.6;
+      if(dist>280) p.aiState='approach';
+      else if(r<aggression*.55) p.aiState='burst';
+      else if(r<aggression*.55+.25) p.aiState='flank';
+      else p.aiState='evade';
+    }
+    p.aiTimer=50+Math.floor(Math.random()*80);
   }
-  p.vx*=.9;p.vy*=.9;p.vx=Math.max(-p.spd,Math.min(p.spd,p.vx));p.vy=Math.max(-p.spd,Math.min(p.spd,p.vy));
+
+  const acc=.28;
+  if(p.aiState==='approach'||p.aiState==='burst'){
+    // Approach: close to optimal range 180px
+    const targetDist=180;
+    const dmul=dist>targetDist?1:-1;
+    p.vx+=dx/dist*acc*dmul;p.vy+=dy/dist*acc*dmul;
+  } else if(p.aiState==='flank'){
+    // Circle from perpendicular angle
+    const perp={x:-dy/dist,y:dx/dist};
+    p.vx+=perp.x*acc*1.5+dx/dist*acc*.2;
+    p.vy+=perp.y*acc*1.5+dy/dist*acc*.2;
+  } else if(p.aiState==='evade'){
+    // Dodge perpendicular then away
+    const perp={x:-dy/dist,y:dx/dist};
+    const side=p.aiEvaseSide||(p.aiEvaseSide=Math.random()<.5?1:-1);
+    p.vx+=perp.x*acc*side*1.3-dx/dist*acc*.5;
+    p.vy+=perp.y*acc*side*1.3-dy/dist*acc*.5;
+  } else { // recover
+    // Retreat away from target
+    p.vx-=dx/dist*acc*.9;p.vy-=dy/dist*acc*.9;
+  }
+
+  p.vx*=.9;p.vy*=.9;
+  p.vx=Math.max(-p.spd,Math.min(p.spd,p.vx));
+  p.vy=Math.max(-p.spd,Math.min(p.spd,p.vy));
   p.x+=p.vx;p.y+=p.vy;
-  p.x=Math.max(p.w,Math.min(W-p.w,p.x));p.y=Math.max(p.h+60,Math.min(H-p.h,p.y));
+  p.x=Math.max(p.w,Math.min(W-p.w,p.x));
+  p.y=Math.max(p.h+60,Math.min(H-p.h,p.y));
   p.facing=dx>0?1:-1;
   if(p.fireCd>0)p.fireCd--;
-  // Auto fire if near
-  if(dist<250&&p.fireCd<=0)fireWeapon(p);
+
+  // Fire with lead-targeting during burst/flank states
+  if(dist<260&&p.fireCd<=0&&p.aiState!=='recover'){
+    // Predict target position based on bullet travel time
+    const bspd=WEAPONS[p.wpnIdx].spd||12;
+    const travelT=dist/Math.max(bspd,1);
+    const predX=target.x+target.vx*travelT*.25;
+    const predY=target.y+target.vy*travelT*.25;
+    const aimDx=predX-p.x,aimDy=predY-p.y;
+    const aimDist=Math.sqrt(aimDx*aimDx+aimDy*aimDy);
+    p.aimDir={x:aimDx/aimDist,y:aimDy/aimDist};
+    fireWeapon(p);
+    if(p.aiState==='burst') p.aiEvaseSide=null; // reset evasion side after burst
+  }
 }
 
 function fireWeapon(p){
@@ -333,11 +395,18 @@ function fireWeapon(p){
   if(w.ammo>0)p.ammos[p.wpnIdx]--;
   p.fireCd=w.spd===0?3:p.fireRate;
   if(w.isLaser){
-    bullets.push({x:p.x+p.facing*p.w/2,y:p.y,vx:p.facing*25,vy:0,team:p.team,col:w.col,r:3,dmg:w.dmg,isLaser:true,life:15,owner:p});
+    // Laser: AI uses aimDir, player shoots forward
+    const ldir=p.isAI&&p.aimDir?p.aimDir:{x:p.facing,y:0};
+    bullets.push({x:p.x+ldir.x*p.w/2,y:p.y+ldir.y*p.w/2,vx:ldir.x*25,vy:ldir.y*25,team:p.team,col:w.col,r:3,dmg:w.dmg,isLaser:true,life:15,owner:p});
+  } else if(p.isAI&&p.aimDir){
+    // AI: aim toward target with small spread
+    const nx=p.aimDir.x+(Math.random()-.5)*.18;
+    const ny=p.aimDir.y+(Math.random()-.5)*.18;
+    const nl=Math.sqrt(nx*nx+ny*ny);
+    bullets.push({x:p.x+p.aimDir.x*p.w/2,y:p.y+p.aimDir.y*p.w/2,vx:nx/nl*w.spd,vy:ny/nl*w.spd,team:p.team,col:w.col,r:w.rad,dmg:w.dmg,life:80,owner:p,explode:w.explode||false});
   } else {
     const spread=p.wpnIdx===0?0.06:0.12;
-    const count=p.wpnIdx===0?1:1;
-    for(let i=0;i<count;i++){
+    for(let i=0;i<1;i++){
       const a=(Math.random()-.5)*spread;
       bullets.push({x:p.x+p.facing*p.w/2,y:p.y+a*50,vx:p.facing*w.spd+Math.cos(a)*p.facing,vy:Math.sin(a)*w.spd,team:p.team,col:w.col,r:w.rad,dmg:w.dmg,life:80,owner:p,explode:w.explode||false});
     }
@@ -483,34 +552,161 @@ function drawPlane(p){
   ctx.save();ctx.translate(p.x,p.y);
   if(p.hitFlash>0&&p.hitFlash%2){ctx.globalAlpha=.5;}
   ctx.scale(p.facing,1);
-  // Shadow
-  ctx.shadowColor=p.col;ctx.shadowBlur=12+4*Math.sin(Date.now()*.008);
-  // Body
+  ctx.shadowColor=p.col;ctx.shadowBlur=14+4*Math.sin(Date.now()*.008);
+  const w=p.w,h=p.h;
+
+  // Engine exhaust glow behind plane
+  const eg=ctx.createRadialGradient(-w*.48,0,0,-w*.48,0,h*1.1);
+  eg.addColorStop(0,p.col+'99');eg.addColorStop(1,'transparent');
+  ctx.fillStyle=eg;ctx.beginPath();ctx.ellipse(-w*.48,0,h*.9,h*.9,0,0,Math.PI*2);ctx.fill();
+
   ctx.fillStyle='#0f172a';
-  ctx.beginPath();ctx.moveTo(-p.w/2,-p.h/3);ctx.lineTo(p.w/2,0);ctx.lineTo(-p.w/2,p.h/3);ctx.closePath();ctx.fill();
-  ctx.strokeStyle=p.col;ctx.lineWidth=2;ctx.stroke();
-  // Cockpit
-  ctx.beginPath();ctx.arc(p.w*.15,0,p.h*.28,0,Math.PI*2);ctx.fillStyle=p.col+'44';ctx.fill();ctx.strokeStyle=p.col;ctx.lineWidth=1;ctx.stroke();
-  // Engine glow
-  const eg=ctx.createRadialGradient(-p.w/2,0,0,-p.w/2,0,p.h);
-  eg.addColorStop(0,p.col+'80');eg.addColorStop(1,'transparent');
-  ctx.fillStyle=eg;ctx.fillRect(-p.w/2-p.h,-p.h,p.h*2,p.h*2);
+  ctx.strokeStyle=p.col;ctx.lineWidth=1.8;
+
+  switch(p.type){
+    case 0:{ // Fighter — swept delta wing + canard
+      ctx.beginPath();ctx.moveTo(w*.5,0);ctx.lineTo(-w*.1,h*.38);ctx.lineTo(-w*.5,h*.32);
+      ctx.lineTo(-w*.42,0);ctx.lineTo(-w*.5,-h*.32);ctx.lineTo(-w*.1,-h*.38);ctx.closePath();
+      ctx.fill();ctx.stroke();
+      // Canard fins at front
+      ctx.beginPath();ctx.moveTo(w*.28,0);ctx.lineTo(w*.08,h*.22);ctx.lineTo(w*.08,-h*.22);ctx.closePath();
+      ctx.strokeStyle=p.col+'aa';ctx.lineWidth=1.2;ctx.stroke();
+      // Cockpit
+      ctx.beginPath();ctx.ellipse(w*.18,0,h*.19,h*.14,0,0,Math.PI*2);
+      ctx.fillStyle=p.col+'55';ctx.fill();ctx.strokeStyle=p.col;ctx.lineWidth=1.5;ctx.stroke();
+      break;
+    }
+    case 1:{ // Interceptor — needle-thin dart
+      ctx.beginPath();ctx.moveTo(w*.52,0);ctx.lineTo(-w*.05,h*.16);
+      ctx.lineTo(-w*.5,h*.28);ctx.lineTo(-w*.4,0);ctx.lineTo(-w*.5,-h*.28);
+      ctx.lineTo(-w*.05,-h*.16);ctx.closePath();
+      ctx.fill();ctx.stroke();
+      // Twin tail fins
+      ctx.beginPath();ctx.moveTo(-w*.28,0);ctx.lineTo(-w*.5,h*.44);ctx.lineTo(-w*.5,h*.24);ctx.closePath();ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-w*.28,0);ctx.lineTo(-w*.5,-h*.44);ctx.lineTo(-w*.5,-h*.24);ctx.closePath();ctx.stroke();
+      // Tiny cockpit
+      ctx.beginPath();ctx.ellipse(w*.28,0,h*.11,h*.09,0,0,Math.PI*2);
+      ctx.fillStyle=p.col+'77';ctx.fill();ctx.strokeStyle=p.col;ctx.lineWidth=1;ctx.stroke();
+      break;
+    }
+    case 2:{ // Bomber — wide rectangular fuselage + straight wings
+      // Fuselage
+      ctx.beginPath();ctx.roundRect(-w*.44,-h*.22,w*.92,h*.44,4);
+      ctx.fill();ctx.stroke();
+      // Wide straight wings
+      ctx.beginPath();ctx.moveTo(-w*.1,-h*.24);ctx.lineTo(-w*.08,-h*.5);
+      ctx.lineTo(-w*.32,-h*.5);ctx.lineTo(-w*.36,-h*.24);ctx.closePath();
+      ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-w*.1,h*.24);ctx.lineTo(-w*.08,h*.5);
+      ctx.lineTo(-w*.32,h*.5);ctx.lineTo(-w*.36,h*.24);ctx.closePath();
+      ctx.fill();ctx.stroke();
+      // Bomb bay line
+      ctx.strokeStyle=p.col+'66';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-w*.1,h*.12);ctx.lineTo(-w*.38,h*.12);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-w*.1,-h*.12);ctx.lineTo(-w*.38,-h*.12);ctx.stroke();
+      // Cockpit
+      ctx.beginPath();ctx.ellipse(w*.25,0,h*.16,h*.14,0,0,Math.PI*2);
+      ctx.fillStyle=p.col+'44';ctx.fill();ctx.strokeStyle=p.col;ctx.lineWidth=1.5;ctx.stroke();
+      break;
+    }
+    case 3:{ // Ghost — angular stealth facets, no curves
+      ctx.beginPath();ctx.moveTo(w*.5,0);
+      ctx.lineTo(w*.04,-h*.08);ctx.lineTo(-w*.2,-h*.44);
+      ctx.lineTo(-w*.5,-h*.18);ctx.lineTo(-w*.44,0);
+      ctx.lineTo(-w*.5,h*.18);ctx.lineTo(-w*.2,h*.44);
+      ctx.lineTo(w*.04,h*.08);ctx.closePath();
+      ctx.fill();ctx.stroke();
+      // Angular panel lines
+      ctx.strokeStyle=p.col+'55';ctx.lineWidth=.8;
+      ctx.beginPath();ctx.moveTo(w*.2,0);ctx.lineTo(-w*.1,-h*.2);ctx.lineTo(-w*.4,-h*.05);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(w*.2,0);ctx.lineTo(-w*.1,h*.2);ctx.lineTo(-w*.4,h*.05);ctx.stroke();
+      break;
+    }
+    case 4:{ // Dragon — organic swept + horn-like fins
+      ctx.beginPath();
+      ctx.moveTo(w*.5,0);
+      ctx.bezierCurveTo(w*.3,-h*.08,w*.1,-h*.35,-w*.1,-h*.42);
+      ctx.lineTo(-w*.48,-h*.28);
+      ctx.bezierCurveTo(-w*.4,-h*.1,-w*.38,h*.1,-w*.48,h*.28);
+      ctx.lineTo(-w*.1,h*.42);
+      ctx.bezierCurveTo(w*.1,h*.35,w*.3,h*.08,w*.5,0);
+      ctx.closePath();ctx.fill();ctx.stroke();
+      // Dragon horns at front
+      ctx.strokeStyle=p.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(w*.38,-h*.08);ctx.lineTo(w*.48,-h*.26);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(w*.38,h*.08);ctx.lineTo(w*.48,h*.26);ctx.stroke();
+      // Scale markings
+      ctx.strokeStyle=p.col+'44';ctx.lineWidth=.8;
+      ctx.beginPath();ctx.arc(w*.1,0,h*.22,Math.PI*.6,Math.PI*1.4);ctx.stroke();
+      // Cockpit eye
+      ctx.beginPath();ctx.ellipse(w*.22,0,h*.14,h*.1,0,0,Math.PI*2);
+      ctx.fillStyle=p.col+'77';ctx.fill();ctx.strokeStyle=p.col;ctx.lineWidth=1.5;ctx.stroke();
+      break;
+    }
+  }
   ctx.shadowBlur=0;
   ctx.restore();
   // HP bar
-  const bw=36;
-  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(p.x-bw/2,p.y-p.h-10,bw,4);
-  ctx.fillStyle=p.hp>50?p.col:'#ef4444';ctx.fillRect(p.x-bw/2,p.y-p.h-10,bw*(p.hp/p.maxHp),4);
+  const bw=44;
+  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(p.x-bw/2,p.y-p.h*.62-9,bw,4);
+  ctx.fillStyle=p.hp>p.maxHp*.35?p.col:'#ef4444';
+  ctx.fillRect(p.x-bw/2,p.y-p.h*.62-9,bw*(p.hp/p.maxHp),4);
 }
 
 function drawBullets(){
+  const t=Date.now();
   bullets.forEach(b=>{
     ctx.save();
     if(b.isLaser){
-      ctx.strokeStyle=b.col;ctx.lineWidth=3;ctx.globalAlpha=.8;ctx.shadowColor=b.col;ctx.shadowBlur=8;
-      ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+b.vx*3,b.y);ctx.stroke();
+      // Laser: glowing beam with double stroke
+      const len=Math.sqrt(b.vx*b.vx+b.vy*b.vy)*4;
+      const ang=Math.atan2(b.vy,b.vx);
+      ctx.translate(b.x,b.y);ctx.rotate(ang);
+      ctx.shadowColor=b.col;ctx.shadowBlur=10;
+      ctx.strokeStyle=b.col+'55';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(len,0);ctx.stroke();
+      ctx.strokeStyle=b.col;ctx.lineWidth=2;ctx.globalAlpha=.9;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(len,0);ctx.stroke();
+      ctx.strokeStyle='#fff';ctx.lineWidth=0.8;ctx.globalAlpha=.6;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(len*.6,0);ctx.stroke();
+    } else if(b.explode){
+      // Nuke: large pulsing sphere + outer ring
+      const pulse=1+.15*Math.sin(t*.025+b.x);
+      ctx.shadowColor=b.col;ctx.shadowBlur=24*pulse;
+      const rg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*2.2*pulse);
+      rg.addColorStop(0,'#fff');rg.addColorStop(.3,b.col);rg.addColorStop(1,b.col+'00');
+      ctx.fillStyle=rg;ctx.beginPath();ctx.arc(b.x,b.y,b.r*2.2*pulse,0,Math.PI*2);ctx.fill();
+      // Ring
+      ctx.strokeStyle=b.col;ctx.lineWidth=2;ctx.globalAlpha=.5+.3*Math.sin(t*.02);
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r*3.5,0,Math.PI*2);ctx.stroke();
+    } else if(b.r>=6){
+      // Missile: elongated oval + flame trail
+      const ang=Math.atan2(b.vy,b.vx);
+      ctx.translate(b.x,b.y);ctx.rotate(ang);
+      ctx.shadowColor=b.col;ctx.shadowBlur=12;
+      // Flame trail gradient
+      const fl=ctx.createLinearGradient(-22,0,0,0);
+      fl.addColorStop(0,'transparent');fl.addColorStop(.5,'#ff7700aa');fl.addColorStop(1,b.col+'cc');
+      ctx.fillStyle=fl;ctx.beginPath();ctx.ellipse(-11,0,13,4,0,0,Math.PI*2);ctx.fill();
+      // Missile body
+      ctx.fillStyle='#0f172a';
+      ctx.beginPath();ctx.ellipse(0,0,9,4.5,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=b.col;ctx.lineWidth=1.5;ctx.stroke();
+      // Nose cone
+      ctx.fillStyle=b.col;
+      ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(5,-2.5);ctx.lineTo(5,2.5);ctx.closePath();ctx.fill();
     } else {
-      ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=b.col;ctx.shadowColor=b.col;ctx.shadowBlur=8;ctx.fill();
+      // Bullet: glowing dot + short velocity trail
+      const ang=Math.atan2(b.vy,b.vx);
+      const spd=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
+      // Trail
+      const tg=ctx.createLinearGradient(b.x-b.vx*1.8,b.y-b.vy*1.8,b.x,b.y);
+      tg.addColorStop(0,'transparent');tg.addColorStop(1,b.col+'88');
+      ctx.strokeStyle=tg;ctx.lineWidth=b.r*1.2;
+      ctx.beginPath();ctx.moveTo(b.x-b.vx*1.8,b.y-b.vy*1.8);ctx.lineTo(b.x,b.y);ctx.stroke();
+      // Core dot
+      ctx.shadowColor=b.col;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fillStyle=b.col;ctx.fill();
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r*.45,0,Math.PI*2);
+      ctx.fillStyle='#fff';ctx.fill();
     }
     ctx.restore();ctx.shadowBlur=0;
   });
@@ -546,7 +742,7 @@ function draw(){
 }
 
 function updateHUD(){
-  const p1=players[0],p2=players[1]||players[1];
+  const p1=players[0],p2=players[1]||players[0];
   if(p1){
     document.getElementById('p1name').textContent=p1.name;
     document.getElementById('p1hp').style.width=Math.max(0,p1.hp/p1.maxHp*100)+'%';
@@ -578,7 +774,136 @@ function loop(){
   draw();
   requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
+if(typeof loopStarted==='undefined'){var loopStarted=true;requestAnimationFrame(loop);}
+
+// ===== ONLINE MULTIPLAYER =====
+const MP_WORKER = 'https://germ-fun.kennardxia.workers.dev';
+const MP_GAME = 'skywar2d';
+let mpWs = null;
+let mpPlayerId = null;
+let mpPeers = {}; // id -> {x,y,vx,vy,hp,weapon,planeType,alive,facing}
+let mpSendTimer = 0;
+let mpConnected = false;
+
+function openMultiplayer(){
+  document.getElementById('mpOverlay').style.display='flex';
+}
+function closeMpOverlay(){
+  document.getElementById('mpOverlay').style.display='none';
+}
+
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{
+    const r=await fetch(`${MP_WORKER}/room/create?game=${MP_GAME}`,{method:'POST'});
+    if(!r.ok)throw new Error('Server error '+r.status);
+    const {code}=await r.json();
+    document.getElementById('mpCode').textContent=code;
+    document.getElementById('mpCode').style.display='block';
+    document.getElementById('mpCodeHint').style.display='block';
+    mpConnect(code);
+  }catch(e){setMpStatus('⚠ Could not reach server. Play offline.');}
+}
+
+function mpJoin(){
+  const code=document.getElementById('mpCodeInput').value.trim().toUpperCase();
+  if(code.length!==6){setMpStatus('Enter a 6-character code');return;}
+  mpConnect(code);
+}
+
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){mpWs.close();mpWs=null;}
+  const url=`${MP_WORKER.replace('https','wss')}/room/${code}/ws?game=${MP_GAME}`;
+  try{
+    mpWs=new WebSocket(url);
+    mpWs.onopen=()=>setMpStatus('Connected to room '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>mpHandleMessage(ev.data);
+  }catch(e){setMpStatus('⚠ WebSocket not available');}
+}
+
+function mpHandleMessage(raw){
+  let data;
+  try{data=JSON.parse(raw);}catch{return;}
+  if(typeof data!=='object'||data===null)return;
+  const allowedTypes=new Set(['welcome','join','leave','state','input']);
+  if(!allowedTypes.has(data.type))return;
+
+  if(data.type==='welcome'){
+    mpPlayerId=data.id;
+    mpConnected=true;
+    setMpStatus(`✓ In room — You are Player ${data.count}`);
+    setMpPlayerCount(data.count);
+    // Start online game
+    document.getElementById('mpOverlay').style.display='none';
+    gameMode='mp';
+    openPlaneSelect();
+  } else if(data.type==='join'){
+    setMpPlayerCount(data.count);
+    setMpStatus(`✓ Player joined (${data.count} total)`);
+  } else if(data.type==='leave'){
+    delete mpPeers[data.id];
+    setMpPlayerCount(data.count);
+  } else if(data.type==='state'){
+    // Update peer state — never write to own player
+    const id=data.from;
+    if(id&&id!==mpPlayerId){
+      // Clamp before storing (defense-in-depth even though server already clamps)
+      mpPeers[id]={
+        x:Math.max(0,Math.min(W,+data.x||0)),
+        y:Math.max(0,Math.min(H,+data.y||0)),
+        vx:Math.max(-15,Math.min(15,+data.vx||0)),
+        vy:Math.max(-15,Math.min(15,+data.vy||0)),
+        hp:Math.max(0,Math.min(200,+data.hp||0)),
+        weapon:Math.floor(+data.weapon||0)%4,
+        planeType:Math.floor(+data.planeType||0)%PLANE_TYPES.length,
+        alive:!!data.alive,
+        facing:data.facing===1?1:-1,
+        col:PLANE_TYPES[Math.floor(+data.planeType||0)%PLANE_TYPES.length].col,
+        name:PLANE_TYPES[Math.floor(+data.planeType||0)%PLANE_TYPES.length].name,
+      };
+    }
+  }
+}
+
+function mpSendState(){
+  if(!mpWs||!mpConnected||mpWs.readyState!==1)return;
+  const p=players[0];if(!p)return;
+  const msg={type:'state',x:p.x,y:p.y,vx:p.vx,vy:p.vy,hp:p.hp,weapon:p.wpnIdx,planeType:p.type,alive:p.alive,facing:p.facing};
+  try{mpWs.send(JSON.stringify(msg));}catch{}
+}
+
+function drawMpPeers(){
+  if(!mpConnected)return;
+  for(const id in mpPeers){
+    const peer=mpPeers[id];
+    if(!peer.alive)continue;
+    // Draw peer plane using same drawPlane logic but create a temp object
+    const tmp={x:peer.x,y:peer.y,vx:peer.vx,vy:peer.vy,hp:peer.hp,maxHp:PLANE_TYPES[peer.planeType].hp,w:52,h:28,type:peer.planeType,col:peer.col,name:peer.name,facing:peer.facing,alive:true,hitFlash:0};
+    drawPlane(tmp);
+    // Peer label
+    ctx.save();ctx.font='bold 10px Segoe UI';ctx.textAlign='center';ctx.fillStyle=peer.col;ctx.shadowColor=peer.col;ctx.shadowBlur=6;
+    ctx.fillText('🌐 '+peer.name,peer.x,peer.y-tmp.h*.7-14);
+    ctx.restore();ctx.shadowBlur=0;
+  }
+}
+
+function setMpStatus(msg){document.getElementById('mpStatus').textContent=msg;}
+function setMpPlayerCount(n){document.getElementById('mpPlayers').textContent=`Players in room: ${n}`;}
+
+// Hook into update loop for MP state sending (20hz = every 3 frames at 60fps)
+const _origUpdate=typeof update!=='undefined'?update:null;
+// Wrap draw to include peers
+const _origDraw=draw;
+draw=function(){
+  _origDraw();
+  drawMpPeers();
+  // Send state at 20hz
+  mpSendTimer++;
+  if(mpSendTimer>=3){mpSendTimer=0;mpSendState();}
+};
 </script>
 </body>
 </html>

@@ -1,64 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Void Runner — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(99,102,241,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#818cf8;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#818cf8;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#818cf8}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Void Runner — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#040616;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(56,189,248,.06) 0%,transparent 70%),#040616;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#38bdf8}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#38bdf8}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>🏃 VOID RUNNER</h1><p style="color:#64748b">Run through the void — double jump — slide — collect coins</p><div class="mrow"><div class="mcard" onclick="startGame()"><div class="mi">🎮</div><h3>Run!</h3><p>Space/W/Up = Jump, S/Down = Slide, tap on mobile</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">Score <span class="hv" id="hS">0</span></div><div class="hb">Coins <span class="hv" id="hC">0</span></div><div class="hb">Best <span class="hv" id="hB">0</span></div></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#38bdf8">CRASHED!</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame()">↩ Run Again</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">🌀</div>
-  <h1>VOID RUNNER</h1>
-  <p>Sprint through collapsing void dimensions. Wall-run, phase through portals, and outsmart deadly AI hunters in this futuristic parkour runner.</p>
-  <div class="features">
-    <span class="feat">🏃 Parkour Chain</span>
-    <span class="feat">🌀 Portal Jumps</span>
-    <span class="feat">🤖 AI Hunters</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">🎮 PC + Mobile</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#6366f1';
-let t=0;
-function loop(){
-  t+=.02;
-  ctx.fillStyle='rgba(0,0,5,.15)';ctx.fillRect(0,0,W,H);
-  for(let i=0;i<6;i++){
-    const r=50+i*40+Math.sin(t+i)*20;
-    const cx2=W/2,cy2=H/2;
-    ctx.beginPath();ctx.arc(cx2,cy2,r*Math.min(W,H)/600,0,Math.PI*2);
-    ctx.strokeStyle=COL+(Math.floor(30+i*12).toString(16).padStart(2,'0'));ctx.lineWidth=1;ctx.stroke();
-  }
-  // Flowing lines
-  for(let i=0;i<5;i++){
-    const y=H/2+Math.sin(t*1.2+i*1.3)*H*.35;
-    ctx.beginPath();ctx.moveTo(0,y);
-    for(let x=0;x<W;x+=8){ctx.lineTo(x,y+Math.sin(t*2+x*.01+i)*15);}
-    ctx.strokeStyle=COL+(Math.floor(20+i*8).toString(16).padStart(2,'0'));ctx.lineWidth=1;ctx.stroke();
-  }
-  requestAnimationFrame(loop);
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+const GROUND=()=>H-80;
+let player,obstacles=[],coins=[],bgPieces=[],score=0,coinCount=0,best=0,running=false,speed=5,frameN=0,spawnTimer=0;
+const keys={};
+window.addEventListener('keydown',e=>{if(!running)return;if(['w','ArrowUp',' '].includes(e.key.toLowerCase()||e.key))jump();if(['s','arrowdown'].includes(e.key.toLowerCase()))slide();});
+canvas.addEventListener('touchstart',e=>{if(!running){startGame();return;}if(e.touches[0].clientY>H/2)slide();else jump();},{passive:false});
+function mkPlayer(){return{x:100,y:GROUND(),vy:0,w:28,h:40,jumping:false,jumpCount:0,sliding:false,slideTmr:0,trail:[],dead:false};}
+function jump(){if(player.jumpCount<2){player.vy=-11.5;player.jumping=true;player.jumpCount++;player.sliding=false;player.slideTmr=0;}}
+function slide(){player.sliding=true;player.slideTmr=25;if(player.jumping){player.vy+=4;}}
+function startGame(){player=mkPlayer();obstacles=[];coins=[];speed=5;frameN=0;spawnTimer=0;score=0;coinCount=0;running=true;document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('hud').style.display='flex';}
+function spawnObstacle(){const t=Math.random();if(t<.5){obstacles.push({x:W+30,y:GROUND()-10,w:22,h:50,type:'block'});}else if(t<.8){obstacles.push({x:W+30,y:GROUND()-40,w:30,h:20,type:'hover'});}else{obstacles.push({x:W+30,y:GROUND()-60,w:16,h:60,type:'tall'});}}
+function spawnCoin(){coins.push({x:W+20,y:GROUND()-40-Math.random()*60,r:8,collected:false});}
+function update(){
+  score++;speed=5+score*.003;
+  player.vy+=0.5;player.y+=player.vy;
+  const gr=GROUND();
+  if(player.y>=gr){player.y=gr;player.vy=0;player.jumping=false;player.jumpCount=0;}
+  if(player.slideTmr>0){player.slideTmr--;if(player.slideTmr===0)player.sliding=false;}
+  const pw=player.w,ph=player.sliding?18:player.h;const px=player.x,py=player.y+(player.sliding?22:0);
+  player.trail.unshift({x:px,y:py,h:ph});if(player.trail.length>8)player.trail.pop();
+  spawnTimer--;if(spawnTimer<=0){spawnObstacle();if(Math.random()<.5)spawnCoin();spawnTimer=40+Math.floor(Math.random()*60/(speed/5));}
+  for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=speed;if(o.x+o.w<0){obstacles.splice(i,1);continue;}if(px+pw-4>o.x&&px+4<o.x+o.w&&py+ph>o.y&&py<o.y+o.h){endGame();return;}}
+  for(let i=coins.length-1;i>=0;i--){const c=coins[i];c.x-=speed;if(c.x<-20){coins.splice(i,1);continue;}if(!c.collected&&Math.hypot(px+pw/2-c.x,py+ph/2-c.y)<pw/2+c.r){c.collected=true;coinCount++;score+=50;}}
+  document.getElementById('hS').textContent=score;document.getElementById('hC').textContent=coinCount;if(score>best)best=score;document.getElementById('hB').textContent=best;
 }
-loop();
-</script>
-</body>
-</html>
+function endGame(){running=false;document.getElementById('hud').style.display='none';document.getElementById('goS').textContent=score;document.getElementById('gameOver').style.display='flex';}
+function draw(){
+  ctx.fillStyle='#040616';ctx.fillRect(0,0,W,H);
+  // BG parallax
+  ctx.fillStyle='rgba(255,255,255,.5)';
+  for(let i=0;i<80;i++){const s=(i*7919+3)%W;const t=(i*6271+score*.2*(i%3+1))%H;ctx.fillRect(s,t,1,1);}
+  // Ground
+  const gr=GROUND();ctx.fillStyle='#1e293b';ctx.fillRect(0,gr+40,W,H);ctx.fillStyle='#38bdf8';ctx.fillRect(0,gr+38,W,3);
+  // Trail
+  for(let i=player.trail.length-1;i>=0;i--){const t=player.trail[i];ctx.globalAlpha=(1-i/player.trail.length)*.25;ctx.fillStyle='#38bdf8';ctx.fillRect(t.x,t.y,player.w,t.h);}ctx.globalAlpha=1;
+  // Player
+  const ph=player.sliding?18:player.h;const py=player.y+(player.sliding?22:0);ctx.save();ctx.fillStyle='#38bdf8';ctx.shadowColor='#38bdf8';ctx.shadowBlur=18;ctx.fillRect(player.x,py,player.w,ph);ctx.restore();ctx.shadowBlur=0;
+  // Obstacles
+  for(const o of obstacles){ctx.save();ctx.fillStyle='#f87171';ctx.shadowColor='#f87171';ctx.shadowBlur=10;ctx.fillRect(o.x,o.y,o.w,o.h);ctx.restore();ctx.shadowBlur=0;}
+  // Coins
+  for(const c of coins){if(c.collected)continue;ctx.save();ctx.fillStyle='#fbbf24';ctx.shadowColor='#fbbf24';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;}
+}
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>

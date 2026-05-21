@@ -1,67 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pixel Duel — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(239,68,68,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#fca5a5;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#fca5a5}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pixel Duel — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#080810;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block;touch-action:none;image-rendering:pixelated}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(168,85,247,.06) 0%,transparent 70%),#080810;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#a855f7,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(168,85,247,.06);border-color:rgba(168,85,247,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#a855f7}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#a855f7,#ec4899);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#a855f7}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>⚔️ PIXEL DUEL</h1><p style="color:#64748b">1v1 side-scrolling fighter — 4 characters — 3 rounds</p><div class="mrow"><div class="mcard" onclick="startGame('1p')"><div class="mi">🎮</div><h3>vs CPU</h3><p>WASD + J/K attack</p></div><div class="mcard" onclick="startGame('2p')"><div class="mi">👥</div><h3>2 Player</h3><p>P1 WASD | P2 Arrows</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">P1 HP <span class="hv" id="hH1">100</span></div><div class="hb">Round <span class="hv" id="hR">1/3</span></div><div class="hb">P2 HP <span class="hv" id="hH2">100</span></div></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#a855f7" id="goTxt">P1 WINS!</h2><button class="bigbtn" onclick="startGame(lastMode)">↩ Rematch</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">⚔️</div>
-  <h1>PIXEL DUEL</h1>
-  <p>Fast-paced pixel art sword duels. Parry, riposte, and combo your opponent into oblivion. Choose from 8 fighter classes each with unique movesets.</p>
-  <div class="features">
-    <span class="feat">⚔️ 8 Fighters</span>
-    <span class="feat">🛡️ Parry System</span>
-    <span class="feat">🎯 Combo Chain</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">👥 2P Local</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#ef4444';
-let t=0;
-const pixels=[];
-for(let i=0;i<80;i++)pixels.push({x:Math.random()*800,y:Math.random()*600,size:4+Math.floor(Math.random()*8)*2,col:['#ef4444','#fca5a5','#7f1d1d','#dc2626'][Math.floor(Math.random()*4)],vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,rot:0,rotSpd:(Math.random()-.5)*.04,a:Math.random()*.4+.1});
-function loop(){
-  t+=.016;
-  ctx.fillStyle='rgba(8,0,0,.15)';ctx.fillRect(0,0,W,H);
-  pixels.forEach(p=>{
-    p.x+=p.vx;p.y+=p.vy;p.rot+=p.rotSpd;
-    if(p.x<-20)p.x=W+20;if(p.x>W+20)p.x=-20;if(p.y<-20)p.y=H+20;if(p.y>H+20)p.y=-20;
-    const s=p.size*Math.min(W,H)/600;
-    ctx.save();ctx.translate(p.x*W/800,p.y*H/600);ctx.rotate(p.rot);
-    ctx.fillStyle=p.col+(Math.floor(p.a*255).toString(16).padStart(2,'0'));
-    ctx.fillRect(-s/2,-s/2,s,s);ctx.restore();
-  });
-  // Cross swords animation
-  const cx=W/2,cy=H*.75;const sw=60*Math.min(W,H)/600;
-  ctx.save();ctx.translate(cx,cy);
-  ctx.save();ctx.rotate(.4+Math.sin(t)*.15);ctx.strokeStyle=COL+'66';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-sw,-sw/6);ctx.lineTo(sw,sw/6);ctx.stroke();ctx.restore();
-  ctx.save();ctx.rotate(-.4+Math.cos(t)*.15);ctx.strokeStyle='#fca5a566';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-sw,sw/6);ctx.lineTo(sw,-sw/6);ctx.stroke();ctx.restore();
-  ctx.restore();
-  requestAnimationFrame(loop);
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const GW=480,GH=270;canvas.width=GW;canvas.height=GH;
+canvas.style.width=Math.min(window.innerWidth,GW*3)+'px';canvas.style.height='auto';canvas.style.display='block';canvas.style.margin='auto';canvas.style.marginTop=Math.max(0,(window.innerHeight-GH*3)/2)+'px';
+let players,round=1,wins=[0,0],running=false,lastMode='1p';
+const CHARS=[{col:'#a855f7',col2:'#7c3aed'},{col:'#ec4899',col2:'#db2777'}];
+const FLOOR=GH-40;
+const keys={};
+window.addEventListener('keydown',e=>keys[e.key]=true);window.addEventListener('keyup',e=>keys[e.key]=false);
+function mkP(x,idx,isAI){return{x,y:FLOOR,w:20,h:30,vx:0,vy:0,hp:100,maxHp:100,facing:idx===0?1:-1,jumpCd:0,atkCd:0,blockCd:0,blocking:false,stun:0,idx,isAI,aiCd:0,airborne:false,col:CHARS[idx].col,col2:CHARS[idx].col2,atkAnim:0,hitFlash:0};}
+function startGame(m){lastMode=m;round=1;wins=[0,0];startRound();}
+function startRound(){players=[mkP(80,0,false),mkP(GW-80,1,lastMode==='1p')];running=true;document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('hud').style.display='flex';document.getElementById('hR').textContent=round+'/3';}
+function input(p){
+  if(p.isAI){
+    const t=players[1-p.idx];
+    p.aiCd--;
+    if(p.aiCd<=0){p.aiCd=15+Math.floor(Math.random()*20);
+      const dx=t.x-p.x;p.facing=dx>0?1:-1;
+      if(Math.abs(dx)>60){p.vx=p.facing*1.8;}else{p.vx=0;}
+      if(Math.abs(dx)<45&&p.atkCd===0)attack(p,t);
+      if(p.y>=FLOOR&&Math.random()<.3&&Math.abs(dx)<100){p.vy=-5;p.airborne=true;}
+    }
+    return;
+  }
+  const i=p.idx;const k=i===0?['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','m','.',',']:[' ','x','z','a','s','d','f'];
+  // idx0: WASD + J/K; idx1: arrows + ,/.
+  if(i===0){
+    p.vx=(keys['a']||keys['A'])?-2.2:(keys['d']||keys['D'])?2.2:0;
+    if((keys['w']||keys['W'])&&p.y>=FLOOR&&!p.airborne){p.vy=-5.5;p.airborne=true;}
+    if((keys['j']||keys['J'])&&p.atkCd===0)attack(p,players[1]);
+    if(keys['k']||keys['K'])p.blocking=true;else p.blocking=false;
+  }else{
+    p.vx=keys['ArrowLeft']?-2.2:keys['ArrowRight']?2.2:0;
+    if(keys['ArrowUp']&&p.y>=FLOOR&&!p.airborne){p.vy=-5.5;p.airborne=true;}
+    if(keys[',']&&p.atkCd===0)attack(p,players[0]);
+    if(keys['.'])p.blocking=true;else p.blocking=false;
+  }
+  if(p.vx>0)p.facing=1;else if(p.vx<0)p.facing=-1;
 }
-loop();
-</script>
-</body>
-</html>
+function attack(attacker,target){
+  attacker.atkCd=20;attacker.atkAnim=10;
+  const dx=target.x-attacker.x;
+  if(Math.abs(dx)<55&&attacker.stun===0){
+    if(target.blocking&&Math.sign(dx)!==target.facing){target.stun=8;attacker.vx-=attacker.facing*2;}
+    else{const dmg=15+Math.floor(Math.random()*10);target.hp=Math.max(0,target.hp-dmg);target.hitFlash=10;target.vx=attacker.facing*3;target.vy=-2;}
+  }
+}
+function update(){
+  for(const p of players){
+    if(p.stun>0)p.stun--;
+    if(p.atkCd>0)p.atkCd--;if(p.atkAnim>0)p.atkAnim--;if(p.hitFlash>0)p.hitFlash--;if(p.blockCd>0)p.blockCd--;
+    if(p.stun===0)input(p);
+    p.vy+=0.35;p.x+=p.vx;p.y+=p.vy;
+    p.x=Math.max(10,Math.min(GW-10,p.x));
+    if(p.y>=FLOOR){p.y=FLOOR;p.vy=0;p.airborne=false;}
+    if(p.vx>0&&!p.isAI)p.vx=0;else if(p.isAI&&Math.abs(p.vx)<.1){}else p.vx*=.8;
+  }
+  for(const p of players)if(p.hp<=0){endRound(1-p.idx);}
+  document.getElementById('hH1').textContent=Math.ceil(players[0].hp);
+  document.getElementById('hH2').textContent=Math.ceil(players[1].hp);
+}
+function endRound(winner){
+  wins[winner]++;
+  if(round>=3||wins[winner]>=2){running=false;document.getElementById('hud').style.display='none';document.getElementById('goTxt').textContent=(winner===0?'P1':'P2')+' WINS! 🏆';document.getElementById('gameOver').style.display='flex';}
+  else{round++;startRound();}
+}
+function draw(){
+  ctx.fillStyle='#080810';ctx.fillRect(0,0,GW,GH);
+  // Stage
+  ctx.fillStyle='#1e1832';ctx.fillRect(0,FLOOR+30,GW,40);
+  ctx.fillStyle='#2d2448';ctx.fillRect(0,FLOOR+28,GW,6);
+  // BG
+  ctx.fillStyle='rgba(168,85,247,.03)';for(let i=0;i<GW;i+=20)ctx.fillRect(i,0,1,GH);
+  for(const p of players){
+    ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.facing,1);
+    const flash=p.hitFlash%2===0;
+    ctx.fillStyle=flash&&p.hitFlash>0?'#fff':(p.blocking?p.col2:p.col);
+    ctx.shadowColor=p.col;ctx.shadowBlur=flash?0:12;
+    // Body
+    ctx.fillRect(-p.w/2,-p.h,p.w,p.h);
+    // Attack arm
+    if(p.atkAnim>0){ctx.fillStyle='#fff';ctx.fillRect(p.w/2,-p.h*.6,12,5);}
+    // Block shield
+    if(p.blocking){ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(p.w/2,-p.h*.8,8,p.h*.7);}
+    ctx.restore();ctx.shadowBlur=0;
+    // HP bar
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(p.x-20,p.y-p.h-12,40,5);ctx.fillStyle=p.col;ctx.fillRect(p.x-20,p.y-p.h-12,40*(p.hp/p.maxHp),5);
+  }
+  // Win indicators
+  for(let i=0;i<wins[0];i++){ctx.fillStyle='#a855f7';ctx.beginPath();ctx.arc(20+i*14,12,5,0,Math.PI*2);ctx.fill();}
+  for(let i=0;i<wins[1];i++){ctx.fillStyle='#ec4899';ctx.beginPath();ctx.arc(GW-20-i*14,12,5,0,Math.PI*2);ctx.fill();}
+}
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>

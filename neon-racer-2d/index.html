@@ -86,7 +86,10 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
     <div class="mcard" data-track="1" onclick="pickTrack(this,1)"><div class="mi">🟡</div><h3>Desert Run</h3><p>High speed oval</p></div>
     <div class="mcard" data-track="2" onclick="pickTrack(this,2)"><div class="mi">🟣</div><h3>Storm Circuit</h3><p>Tight chicanes</p></div>
   </div>
-  <button class="menu-btn" onclick="startRace()">▶ START RACE</button>
+  <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+    <button class="menu-btn" onclick="startRace()">▶ START RACE</button>
+    <button class="menu-btn" onclick="openMultiplayer()" style="background:linear-gradient(135deg,#10b981,#059669)">🌐 Online</button>
+  </div>
 </div>
 
 <canvas id="c"></canvas>
@@ -256,7 +259,6 @@ function initRace(){
   cars.forEach(c=>{c.lapStartTime=0;c.lapTime=0;c.bestLap=Infinity;c.lapCount=1;c.nextWP=1;c.lapProgress=0;});
 
   running=true;raceStarted=false;
-  requestAnimationFrame(loop);
   startCountdown();
 }
 
@@ -294,7 +296,16 @@ function update(){
       steerInput=Math.max(-1,Math.min(1,da*2))*car.aiSkill;
       accel=(dist<80?.3:1)*car.aiSkill;
       nitroPress=car.nitro>50&&Math.random()<.02;
-      if(dist<40)car.nextWP=(car.nextWP+1)%swp.length;
+      if(dist<40){
+        car.nextWP=(car.nextWP+1)%swp.length;
+        if(car.nextWP===0){
+          const lapT=raceTime-car.lapTime;
+          car.lapTime=raceTime;
+          if(lapT<car.bestLap&&lapT>5)car.bestLap=lapT;
+          car.lapCount++;
+          if(car.lapCount>totalLaps){car.finished=true;car.totalTime=raceTime;}
+        }
+      }
     } else {
       const k=car.keys;
       if(keys2[k.up]||keys2['p1_up'])accel=1;
@@ -489,9 +500,65 @@ function notify(msg){const el=document.getElementById('notify');el.textContent=m
 function loop(){
   if(running)update();
   draw();
+  mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;mpSendState();}
   requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
+if(typeof loopStarted==='undefined'){var loopStarted=true;requestAnimationFrame(loop);}
+
+// ===== ONLINE MULTIPLAYER =====
+const MP_WORKER='https://germ-fun.kennardxia.workers.dev';
+const MP_GAME='neonracer';
+let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
+function openMultiplayer(){
+  let ov=document.getElementById('mpOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='mpOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#06b6d4">🌐 Online Race</h2><p style="color:#64748b">Race friends online — up to 6 players</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">CREATE ROOM</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#06b6d4,#7c3aed);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">JOIN ROOM</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#06b6d4,#7c3aed);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer">✕ Close</button>';
+    document.body.appendChild(ov);
+  }else{ov.style.display='flex';}
+}
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{const r=await fetch(`${MP_WORKER}/room/create?game=${MP_GAME}`,{method:'POST'});if(!r.ok)throw 0;const {code}=await r.json();document.getElementById('mpCode').textContent=code;document.getElementById('mpCode').style.display='block';mpConnect(code);}catch{setMpStatus('⚠ Server unreachable. Play offline.');}
+}
+function mpJoin(){const c=document.getElementById('mpCodeInput').value.trim().toUpperCase();if(c.length!==6){setMpStatus('Enter 6 chars');return;}mpConnect(c);}
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){mpWs.close();}
+  try{mpWs=new WebSocket(`${MP_WORKER.replace('https','wss')}/room/${code}/ws?game=${MP_GAME}`);
+    mpWs.onopen=()=>setMpStatus('Connected to '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>{let d;try{d=JSON.parse(ev.data);}catch{return;}if(!d||typeof d!=='object')return;
+      if(d.type==='welcome'){mpPlayerId=d.id;mpConnected=true;setMpStatus(`✓ In room (Player ${d.count})`);document.getElementById('mpOverlay').style.display='none';startRace();}
+      else if(d.type==='leave'){delete mpPeers[d.id];}
+      else if(d.type==='state'&&d.from&&d.from!==mpPlayerId){
+        mpPeers[d.from]={x:Math.max(-50,Math.min(3000,+d.x||0)),y:Math.max(-50,Math.min(3000,+d.y||0)),angle:+d.angle||0,speed:Math.max(0,Math.min(15,+d.speed||0)),lap:Math.max(0,+d.lap||0),nitro:!!d.nitro};}
+    };
+  }catch{setMpStatus('⚠ WebSocket unavailable');}
+}
+function mpSendState(){
+  if(!mpWs||!mpConnected||mpWs.readyState!==1||!cars||!cars[0])return;
+  const c0=cars[0];
+  try{mpWs.send(JSON.stringify({type:'state',x:c0.x,y:c0.y,angle:c0.angle,speed:c0.speed,lap:c0.lapCount,nitro:c0.nitro>0}));}catch{}
+}
+function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
+// Draw peers in the world (minimal dot)
+const _nrOrigDraw=draw;
+draw=function(){
+  _nrOrigDraw();
+  if(!mpConnected||!ctx||!cam)return;
+  for(const id in mpPeers){
+    const p=mpPeers[id];
+    const sx=p.x-cam.x+canvas.width/2,sy=p.y-cam.y+canvas.height/2;
+    ctx.save();ctx.translate(sx,sy);ctx.rotate(p.angle);
+    ctx.fillStyle='#10b981';ctx.beginPath();ctx.roundRect(-12,-6,24,12,3);ctx.fill();
+    ctx.restore();
+    ctx.save();ctx.fillStyle='#fff';ctx.font='bold 9px Segoe UI';ctx.textAlign='center';ctx.fillText('🌐',sx,sy-18);ctx.restore();
+  }
+};
 </script>
 </body>
 </html>

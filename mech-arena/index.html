@@ -1,64 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mech Arena — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(220,38,38,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.4);color:#f87171;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);color:#f87171;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#f87171}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mech Arena — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#060a06;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block;touch-action:none}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(16,185,129,.06) 0%,transparent 70%),#060a06;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#10b981,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#10b981}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#10b981,#6366f1);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#10b981}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>🤖 MECH ARENA</h1><p style="color:#64748b">Arena combat — 4 mech types — survive wave after wave</p><div class="mrow"><div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div><h3>PC Mode</h3><p>WASD move + mouse aim + click fire</p></div><div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile</h3><p>Dual joystick</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">HP <span class="hv" id="hH">100</span></div><div class="hb">Kills <span class="hv" id="hK">0</span></div><div class="hb">Wave <span class="hv" id="hW">1</span></div><div class="hb">Heat <span class="hv" id="hHt">0%</span></div></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#10b981">DESTROYED</h2><div style="color:#94a3b8">Kills: <span id="goK" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame(lastMode)">↩ Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">🤖</div>
-  <h1>MECH ARENA</h1>
-  <p>Pilot towering battle mechs in a post-apocalyptic coliseum. Swap weapons mid-battle, unlock armor mods, and destroy enemy mechs in brutal 1v1 combat.</p>
-  <div class="features">
-    <span class="feat">⚙️ 6 Mech Classes</span>
-    <span class="feat">🔧 Weapon Mods</span>
-    <span class="feat">🛡️ Armor System</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">🎮 PC + Mobile</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#dc2626';
-let t=0;
-const sparks=[];for(let i=0;i<40;i++)sparks.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*2,vy:-Math.random()*2-1,life:Math.random()*60,maxLife:60,r:1+Math.random()*2});
-function loop(){
-  t+=.015;
-  ctx.fillStyle='rgba(8,0,0,.2)';ctx.fillRect(0,0,W,H);
-  // Grid
-  ctx.strokeStyle='rgba(220,38,38,.06)';ctx.lineWidth=1;
-  const gs=60;for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-  for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-  // Sparks
-  sparks.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.vy+=.05;s.life--;
-    if(s.life<=0){s.x=Math.random()*W;s.y=H+20;s.vy=-Math.random()*3-1;s.vx=(Math.random()-.5)*2;s.life=s.maxLife;}
-    const a=s.life/s.maxLife;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(239,68,68,${a*.8})`;ctx.fill();
-  });
-  // Pulse ring
-  const pr=(Math.sin(t)+1)/2*200+50;
-  ctx.beginPath();ctx.arc(W/2,H/2,pr,0,Math.PI*2);ctx.strokeStyle=COL+'22';ctx.lineWidth=2;ctx.stroke();
-  requestAnimationFrame(loop);
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+let mech,enemies=[],bullets=[],eBullets=[],kills=0,wave=0,running=false,lastMode='pc',mx=300,my=300,fireHeld=false,heat=0;
+const keys={};
+const ENEMY_T=[
+  {name:'Scout',hp:30,spd:1.8,dmg:8,fire:45,r:14,col:'#f87171'},
+  {name:'Guard',hp:80,spd:1.1,dmg:20,fire:60,r:20,col:'#fb923c'},
+  {name:'Sniper',hp:20,spd:2,dmg:35,fire:80,r:12,col:'#38bdf8'},
+  {name:'Boss',hp:400,spd:.8,dmg:40,fire:35,r:34,col:'#a78bfa'},
+];
+function mkMech(){return{x:W/2,y:H/2,vx:0,vy:0,angle:0,hp:200,maxHp:200,fireTimer:0};}
+function startGame(m){lastMode=m;mech=mkMech();enemies=[];bullets=[];eBullets=[];kills=0;wave=0;heat=0;running=true;document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('hud').style.display='flex';nextWave();}
+function nextWave(){wave++;const n=wave*2+2;for(let i=0;i<n;i++){const t=wave>=5&&i===0?ENEMY_T[3]:ENEMY_T[Math.floor(Math.random()*3)];const a=Math.random()*Math.PI*2;const d=300+Math.random()*200;enemies.push({x:mech.x+Math.cos(a)*d,y:mech.y+Math.sin(a)*d,hp:t.hp*(1+wave*.08),maxHp:t.hp*(1+wave*.08),spd:t.spd,dmg:t.dmg,fire:t.fire,r:t.r,col:t.col,fireTimer:Math.random()*60,angle:0});}document.getElementById('hW').textContent=wave;}
+window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+canvas.addEventListener('mousedown',e=>{if(e.button===0)fireHeld=true;});canvas.addEventListener('mouseup',e=>{if(e.button===0)fireHeld=false;});
+function update(){
+  mech.angle=Math.atan2(my-mech.y,mx-mech.x);
+  const spd=3.5;if(keys.w||keys.arrowup){mech.vy-=.18;}if(keys.s||keys.arrowdown){mech.vy+=.18;}if(keys.a||keys.arrowleft){mech.vx-=.18;}if(keys.d||keys.arrowright){mech.vx+=.18;}
+  mech.vx*=.88;mech.vy*=.88;mech.x=Math.max(20,Math.min(W-20,mech.x+mech.vx));mech.y=Math.max(20,Math.min(H-20,mech.y+mech.vy));
+  heat=Math.max(0,heat-.2);
+  mech.fireTimer=Math.max(0,mech.fireTimer-1);
+  if((fireHeld||keys[' '])&&mech.fireTimer===0&&heat<100){const a=mech.angle;bullets.push({x:mech.x,y:mech.y,vx:Math.cos(a)*12,vy:Math.sin(a)*12,dmg:25,life:60});mech.fireTimer=8;heat=Math.min(100,heat+4);}
+  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx;b.y+=b.vy;b.life--;if(b.life<=0){bullets.splice(i,1);continue;}let hit=false;for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){e.hp-=b.dmg;hit=true;if(e.hp<=0){kills++;enemies.splice(j,1);}break;}}if(hit)bullets.splice(i,1);}
+  for(let i=eBullets.length-1;i>=0;i--){const b=eBullets[i];b.x+=b.vx;b.y+=b.vy;b.life--;if(b.life<=0){eBullets.splice(i,1);continue;}if(Math.hypot(b.x-mech.x,b.y-mech.y)<22){mech.hp-=b.dmg;eBullets.splice(i,1);if(mech.hp<=0)endGame();}}
+  for(const e of enemies){const dx=mech.x-e.x,dy=mech.y-e.y,d=Math.hypot(dx,dy)||1;const nx=dx/d,ny=dy/d;e.x+=nx*e.spd;e.y+=ny*e.spd;e.angle=Math.atan2(dy,dx);if(d<e.r+24){mech.hp-=.3;if(mech.hp<=0)endGame();}e.fireTimer--;if(e.fireTimer<=0&&d<350){eBullets.push({x:e.x,y:e.y,vx:nx*5,vy:ny*5,dmg:e.dmg,life:80});e.fireTimer=e.fire;}}
+  if(enemies.length===0)nextWave();
+  document.getElementById('hH').textContent=Math.ceil(mech.hp);document.getElementById('hK').textContent=kills;document.getElementById('hHt').textContent=Math.round(heat)+'%';
 }
-loop();
-</script>
-</body>
-</html>
+function endGame(){running=false;document.getElementById('hud').style.display='none';document.getElementById('goK').textContent=kills;document.getElementById('gameOver').style.display='flex';}
+function draw(){
+  ctx.fillStyle='#060a06';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(16,185,129,.05)';ctx.lineWidth=1;for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  for(const e of enemies){ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.angle);ctx.fillStyle=e.col;ctx.shadowColor=e.col;ctx.shadowBlur=12;ctx.fillRect(-e.r,-e.r,e.r*2,e.r*2);ctx.restore();ctx.shadowBlur=0;ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(e.x-e.r,e.y-e.r-7,e.r*2,4);ctx.fillStyle='#34d399';ctx.fillRect(e.x-e.r,e.y-e.r-7,e.r*2*(e.hp/e.maxHp),4);}
+  for(const b of bullets){ctx.save();ctx.fillStyle='#10b981';ctx.shadowColor='#10b981';ctx.shadowBlur=8;ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;}
+  for(const b of eBullets){ctx.save();ctx.fillStyle='#f87171';ctx.shadowColor='#f87171';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;}
+  // Player mech
+  ctx.save();ctx.translate(mech.x,mech.y);ctx.rotate(mech.angle);ctx.fillStyle='#10b981';ctx.shadowColor='#10b981';ctx.shadowBlur=22;ctx.fillRect(-18,-14,36,28);ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(-10,-10,20,20);ctx.restore();ctx.shadowBlur=0;
+  // HP bar
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(10,H-20,200,8);ctx.fillStyle='#10b981';ctx.fillRect(10,H-20,200*(mech.hp/mech.maxHp),8);
+  // Heat bar
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(10,H-32,200,6);ctx.fillStyle=heat>75?'#ef4444':'#f59e0b';ctx.fillRect(10,H-32,200*(heat/100),6);
+}
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>

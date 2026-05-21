@@ -62,6 +62,7 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
   <div class="mrow">
     <div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div><h3>PC Mode</h3><p>SPACE / Click to flip</p></div>
     <div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile Mode</h3><p>Tap anywhere to flip</p></div>
+    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.06)"><div class="mi">🌐</div><h3>Online Race</h3><p>Race friends parallel</p></div>
   </div>
 </div>
 
@@ -138,6 +139,7 @@ const SKINS=[
   {name:'Star',col:'#f59e0b',shape:'star'},
   {name:'Diamond',col:'#ef4444',shape:'diamond'},
 ];
+let spawnGen=0;
 let curSkin=0;
 
 function startGame(mode){
@@ -164,9 +166,8 @@ function resetGame(){
   for(let i=0;i<100;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.3,speed:(Math.random()*.5+.2),layer:Math.floor(Math.random()*3)});
   document.getElementById('go').classList.remove('show');
   running=true;
-  requestAnimationFrame(loop);
   // Spawn first obstacle after delay
-  setTimeout(spawnObstacle,1500);
+  spawnGen++;setTimeout(()=>spawnObstacle(spawnGen),1500);
 }
 
 // Input
@@ -193,8 +194,8 @@ function flipGravity(){
   curSkin=(curSkin+1)%SKINS.length;
 }
 
-function spawnObstacle(){
-  if(!running)return;
+function spawnObstacle(gen){
+  if(gen!==spawnGen||!running)return;
   const ch=CHANNEL_H();
   const gapY=Math.random()*(H-ch-80)+40;
   const wallW=20+Math.floor(distance/1000)*5;
@@ -221,7 +222,8 @@ function spawnObstacle(){
 
   // Next spawn time — decreases with distance
   const delay=Math.max(600,1400-Math.floor(distance/200)*40);
-  setTimeout(spawnObstacle,delay);
+  const g=spawnGen;
+  setTimeout(()=>spawnObstacle(g),delay);
 }
 
 function getObstacleColor(){
@@ -266,13 +268,13 @@ function update(){
       if(py-pr<o.topH||py+pr>o.botY){
         triggerDeath();return;
       }
-      // Passed
-      if(!o.passed&&o.x+o.w<px){
-        o.passed=true;distance+=1;
-        combo=Math.min(combo+1,8);comboTimer=200;
-        notify(`x${combo} COMBO!`);
-        popFloat(px,py,'✓');
-      }
+    }
+    // Passed — checked outside AABB so it fires when obstacle fully left of player
+    if(!o.passed&&o.x+o.w<px){
+      o.passed=true;distance+=1;
+      combo=Math.min(combo+1,8);comboTimer=200;
+      notify(`x${combo} COMBO!`);
+      popFloat(px,py,'✓');
     }
   }
 
@@ -454,9 +456,62 @@ function notify(msg){const el=document.getElementById('notify');el.textContent=m
 function loop(){
   if(running)update();
   draw();
+  mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;mpSendState();}
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+// ===== ONLINE MULTIPLAYER (Parallel Race) =====
+const MP_WORKER='https://germ-fun.kennardxia.workers.dev';
+const MP_GAME='gravswitch';
+let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
+function openMultiplayer(){
+  let ov=document.getElementById('mpOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='mpOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#6366f1">🌐 Online Race</h2><p style="color:#64748b">Race friends — up to 6 parallel runs</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">CREATE ROOM</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#6366f1,#a78bfa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">JOIN ROOM</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#6366f1,#a78bfa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer">✕ Close</button>';
+    document.body.appendChild(ov);
+  }else{ov.style.display='flex';}
+}
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{const r=await fetch(`${MP_WORKER}/room/create?game=${MP_GAME}`,{method:'POST'});if(!r.ok)throw 0;const {code}=await r.json();document.getElementById('mpCode').textContent=code;document.getElementById('mpCode').style.display='block';mpConnect(code);}catch{setMpStatus('⚠ Server unreachable. Play offline.');}
+}
+function mpJoin(){const c=document.getElementById('mpCodeInput').value.trim().toUpperCase();if(c.length!==6){setMpStatus('Enter 6 chars');return;}mpConnect(c);}
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){mpWs.close();}
+  try{mpWs=new WebSocket(`${MP_WORKER.replace('https','wss')}/room/${code}/ws?game=${MP_GAME}`);
+    mpWs.onopen=()=>setMpStatus('Connected to '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>{let d;try{d=JSON.parse(ev.data);}catch{return;}if(!d||typeof d!=='object')return;
+      if(d.type==='welcome'){mpPlayerId=d.id;mpConnected=true;setMpStatus(`✓ In room (Player ${d.count})`);document.getElementById('mpOverlay').style.display='none';startGame('pc');}
+      else if(d.type==='leave'){delete mpPeers[d.id];}
+      else if(d.type==='state'&&d.from&&d.from!==mpPlayerId){
+        mpPeers[d.from]={y:Math.max(0,Math.min(600,+d.y||0)),score:Math.max(0,+d.score||0),gravDir:+d.gravDir||1,alive:!!d.alive};}
+    };
+  }catch{setMpStatus('⚠ WebSocket unavailable');}
+}
+function mpSendState(){
+  if(!mpWs||!mpConnected||mpWs.readyState!==1)return;
+  try{mpWs.send(JSON.stringify({type:'state',y:py,score,gravDir,alive:running}));}catch{}
+}
+function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
+// Show peer scores on HUD
+const _gsOrigDraw=draw;
+draw=function(){
+  _gsOrigDraw();
+  if(!mpConnected)return;
+  let i=0;
+  for(const id in mpPeers){
+    const p=mpPeers[id];i++;
+    ctx.save();ctx.font='bold 11px Segoe UI';ctx.fillStyle=p.alive?'#10b981':'#475569';ctx.textAlign='left';
+    ctx.fillText(`🌐 P${i}: ${p.score}`,10,canvas.height-20-i*16);ctx.restore();
+  }
+};
 </script>
 </body>
 </html>

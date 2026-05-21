@@ -1,73 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laser Bounce — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(6,182,212,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.4);color:#67e8f9;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);color:#67e8f9;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#67e8f9}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Laser Bounce — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#050510;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block;touch-action:none}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(52,211,153,.06) 0%,transparent 70%),#050510;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#34d399,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#34d399}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#34d399,#38bdf8);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#34d399}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}#lvlComplete{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>🪞 LASER BOUNCE</h1><p style="color:#64748b">Aim the laser — bounce off mirrors — hit all targets</p><div class="mrow"><div class="mcard" onclick="startGame()"><div class="mi">🎯</div><h3>Play</h3><p>Click to aim &amp; fire</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">Level <span class="hv" id="hL">1</span></div><div class="hb">Targets <span class="hv" id="hT">0</span></div><div class="hb">Shots <span class="hv" id="hSh">3</span></div><div class="hb">Score <span class="hv" id="hS">0</span></div></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#34d399">LEVEL CLEAR!</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="nextLevel()">→ Next Level</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="lvlComplete" style="display:none"><h2 style="font-size:2rem;font-weight:900;color:#f87171">OUT OF SHOTS!</h2><button class="bigbtn" onclick="startGame()">↩ Restart</button></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">🔦</div>
-  <h1>LASER BOUNCE</h1>
-  <p>Fire lasers that ricochet off mirrored walls. Chain bounces to eliminate targets, solve optical puzzles, and unlock increasingly complex arenas.</p>
-  <div class="features">
-    <span class="feat">🔦 Ricochet Physics</span>
-    <span class="feat">🪞 Mirror Walls</span>
-    <span class="feat">🧩 50 Puzzles</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">🎮 PC + Mobile</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#06b6d4';
-let t=0;
-// Bouncing laser beam
-let bx=200,by=200,bvx=3.5,bvy=2.2;
-const beamTrail=[];
-function loop(){
-  t+=.016;
-  ctx.fillStyle='rgba(0,5,10,.18)';ctx.fillRect(0,0,W,H);
-  bx+=bvx;by+=bvy;
-  if(bx<20||bx>W-20){bvx*=-1;spawnRipple(bx,by);}
-  if(by<20||by>H-20){bvy*=-1;spawnRipple(bx,by);}
-  beamTrail.push({x:bx,y:by,a:1});
-  if(beamTrail.length>40)beamTrail.shift();
-  // Draw trail
-  for(let i=1;i<beamTrail.length;i++){
-    const a=(i/beamTrail.length)*.8;
-    ctx.beginPath();ctx.moveTo(beamTrail[i-1].x,beamTrail[i-1].y);ctx.lineTo(beamTrail[i].x,beamTrail[i].y);
-    ctx.strokeStyle=`rgba(6,182,212,${a})`;ctx.lineWidth=2+a*2;ctx.shadowColor=COL;ctx.shadowBlur=8*a;ctx.stroke();
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=Math.min(window.innerHeight,600);canvas.style.marginTop=(window.innerHeight-H)/2+'px';}resize();window.addEventListener('resize',resize);
+let level=1,score=0,running=false,shotsLeft=3,laserPath=[];
+let mirrors=[],targets=[];
+let mx=W/2,my=H/2;
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;calcLaser();});
+canvas.addEventListener('click',shoot);
+canvas.addEventListener('touchend',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();mx=e.changedTouches[0].clientX-r.left;my=e.changedTouches[0].clientY-r.top;shoot();},{passive:false});
+
+const LEVELS=[
+  {mirrors:[{x:.5,y:.3,a:Math.PI/4},{x:.7,y:.6,a:-Math.PI/4}],targets:[{x:.8,y:.2},{x:.2,y:.8}],shots:4},
+  {mirrors:[{x:.3,y:.4,a:Math.PI/4},{x:.6,y:.3,a:-Math.PI/4},{x:.5,y:.7,a:Math.PI/4}],targets:[{x:.8,y:.15},{x:.15,y:.7},{x:.85,y:.8}],shots:5},
+  {mirrors:[{x:.25,y:.25,a:Math.PI/4},{x:.75,y:.25,a:-Math.PI/4},{x:.75,y:.75,a:Math.PI/4},{x:.25,y:.75,a:-Math.PI/4}],targets:[{x:.5,y:.1},{x:.9,y:.5},{x:.5,y:.9},{x:.1,y:.5}],shots:5},
+  {mirrors:[{x:.4,y:.2,a:.4},{x:.6,y:.5,a:-.3},{x:.3,y:.7,a:.6},{x:.7,y:.3,a:-.5}],targets:[{x:.85,y:.1},{x:.9,y:.7},{x:.1,y:.4},{x:.5,y:.9}],shots:6},
+];
+
+const EMITTER={x:.1,y:.5};
+
+function startGame(){level=1;score=0;loadLevel();document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('lvlComplete').style.display='none';document.getElementById('hud').style.display='flex';running=true;}
+function nextLevel(){level++;if(level>LEVELS.length)level=1;score+=shotsLeft*100;loadLevel();document.getElementById('gameOver').style.display='none';}
+function loadLevel(){const L=LEVELS[(level-1)%LEVELS.length];shotsLeft=L.shots;mirrors=L.mirrors.map(m=>({x:m.x*W,y:m.y*H,a:m.a,hit:false}));targets=L.targets.map(t=>({x:t.x*W,y:t.y*H,r:14,hit:false}));calcLaser();updateHUD();}
+function updateHUD(){document.getElementById('hL').textContent=level;document.getElementById('hT').textContent=targets.filter(t=>!t.hit).length;document.getElementById('hSh').textContent=shotsLeft;document.getElementById('hS').textContent=score;}
+
+function calcLaser(){
+  laserPath=[];
+  const ex=EMITTER.x*W,ey=EMITTER.y*H;
+  let px=ex,py=ey,dx=mx-ex,dy=my-ey;
+  const len=Math.hypot(dx,dy);if(len===0)return;dx/=len;dy/=len;
+  laserPath.push({x:px,y:py});
+  for(let bounce=0;bounce<8;bounce++){
+    let minT=Infinity,hitMirror=null;
+    for(const m of mirrors){
+      // Mirror as line segment of length 40
+      const ml=40;const mx2=Math.cos(m.a)*ml,my2=Math.sin(m.a)*ml;
+      const x1=m.x-mx2,y1=m.y-my2,x2=m.x+mx2,y2=m.y+my2;
+      const denom=(x2-x1)*(py-dy*1000-(py))-(y2-y1)*(px-dx*1000-px);
+      // Ray-segment intersection
+      const t2=((px-x1)*(dy)-( py-y1)*(dx))/((x2-x1)*(dy)-(y2-y1)*(dx)+1e-9);
+      const t1=((px-x1)*(y2-y1)-(py-y1)*(x2-x1))/((dx)*(y2-y1)-(dy)*(x2-x1)+1e-9);
+      if(t1>0.01&&t2>0&&t2<1&&t1<minT){minT=t1;hitMirror=m;}
+    }
+    // Wall check
+    let wallT=Infinity,wallNx=0,wallNy=0;
+    const walls=[{t:dx>0?(W-px)/dx:Infinity,nx:-1,ny:0},{t:dx<0?-px/dx:Infinity,nx:1,ny:0},{t:dy>0?(H-py)/dy:Infinity,nx:0,ny:-1},{t:dy<0?-py/dy:Infinity,nx:0,ny:1}];
+    for(const w of walls)if(w.t>0.01&&w.t<wallT){wallT=w.t;wallNx=w.nx;wallNy=w.ny;}
+    const endT=Math.min(minT,wallT,600);
+    laserPath.push({x:px+dx*endT,y:py+dy*endT});
+    if(endT>=wallT||endT>=600)break;
+    // Reflect off mirror
+    const m=hitMirror;const nx=Math.sin(m.a),ny=-Math.cos(m.a);
+    const dot=dx*nx+dy*ny;dx-=2*dot*nx;dy-=2*dot*ny;
+    px=px+dx*minT*.99+nx*.01;py=py+dy*minT*.99+ny*.01;// move to hit point
+    px=laserPath[laserPath.length-1].x;py=laserPath[laserPath.length-1].y;
   }
-  ctx.shadowBlur=0;
-  // Head glow
-  ctx.beginPath();ctx.arc(bx,by,5,0,Math.PI*2);ctx.fillStyle=COL;ctx.shadowColor=COL;ctx.shadowBlur=20;ctx.fill();ctx.shadowBlur=0;
-  // Grid lines
-  ctx.strokeStyle='rgba(6,182,212,.04)';ctx.lineWidth=1;
-  for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-  for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-  requestAnimationFrame(loop);
 }
-function spawnRipple(x,y){}
-loop();
-</script>
-</body>
-</html>
+
+function shoot(){
+  if(!running||shotsLeft<=0)return;
+  shotsLeft--;
+  // Check targets hit
+  let hitCount=0;
+  for(const t of targets){if(t.hit)continue;for(let i=1;i<laserPath.length;i++){const p1=laserPath[i-1],p2=laserPath[i];if(ptSegDist(t.x,t.y,p1.x,p1.y,p2.x,p2.y)<t.r){t.hit=true;hitCount++;break;}}}
+  score+=hitCount*150;
+  if(targets.every(t=>t.hit)){document.getElementById('goS').textContent=score;document.getElementById('gameOver').style.display='flex';}
+  else if(shotsLeft===0){document.getElementById('lvlComplete').style.display='flex';}
+  updateHUD();
+}
+
+function ptSegDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay;const t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy+1e-9)));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));}
+
+function draw(){
+  ctx.fillStyle='#050510';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,.03)';ctx.lineWidth=1;for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // Laser path
+  if(laserPath.length>1){ctx.save();ctx.strokeStyle='#34d399';ctx.lineWidth=2;ctx.shadowColor='#34d399';ctx.shadowBlur=12;ctx.globalAlpha=.7;ctx.beginPath();laserPath.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();ctx.restore();ctx.shadowBlur=0;}
+  // Emitter
+  const ex=EMITTER.x*W,ey=EMITTER.y*H;ctx.save();ctx.fillStyle='#38bdf8';ctx.shadowColor='#38bdf8';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(ex,ey,10,0,Math.PI*2);ctx.fill();ctx.restore();ctx.shadowBlur=0;
+  // Mirrors
+  for(const m of mirrors){ctx.save();ctx.translate(m.x,m.y);ctx.rotate(m.a);ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.shadowColor='#f59e0b';ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(-40,0);ctx.lineTo(40,0);ctx.stroke();ctx.restore();ctx.shadowBlur=0;}
+  // Targets
+  for(const t of targets){ctx.save();ctx.fillStyle=t.hit?'rgba(52,211,153,.3)':'#f472b6';ctx.shadowColor=t.hit?'#34d399':'#f472b6';ctx.shadowBlur=t.hit?4:14;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill();if(!t.hit){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}ctx.restore();ctx.shadowBlur=0;}
+  // Aim dot
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(mx,my,5,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function loop(){draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>

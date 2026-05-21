@@ -1,57 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Drift King — GERM.FUN</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas{position:fixed;inset:0;width:100%;height:100%}
-.card{position:relative;z-index:10;text-align:center;padding:2.5rem 2rem;background:rgba(0,0,0,.55);border:1px solid rgba(245,158,11,.25);border-radius:20px;max-width:380px;backdrop-filter:blur(16px)}
-.badge{display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#f59e0b;font-size:.65rem;font-weight:800;letter-spacing:.2em;padding:.3rem .8rem;border-radius:20px;text-transform:uppercase;margin-bottom:1rem}
-.ico{font-size:4rem;margin-bottom:.8rem}
-h1{font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:.4rem;letter-spacing:-1px}
-p{font-size:.9rem;color:#94a3b8;line-height:1.6;margin-bottom:1.5rem}
-.features{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
-.feat{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fbbf24;font-size:.72rem;padding:.25rem .65rem;border-radius:8px}
-a.back{display:inline-block;color:#64748b;font-size:.82rem;text-decoration:none;border:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;border-radius:8px}
-a.back:hover{color:#f59e0b}
-</style>
-</head>
+﻿<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drift King — germ.fun</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0505;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block;touch-action:none}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(239,68,68,.06) 0%,transparent 70%),#0a0505;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#ef4444}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#ef4444,#f97316);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#ef4444}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
+<div id="menu"><h1>🚗 DRIFT KING</h1><p style="color:#64748b">Master the art of drift — score combos on 3 tracks</p><div class="mrow"><div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div><h3>PC Mode</h3><p>WASD — steer + throttle</p></div><div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile</h3><p>Touch buttons</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="hud" style="display:none"><div class="hb">Drift <span class="hv" id="hD">0</span></div><div class="hb">Score <span class="hv" id="hS">0</span></div><div class="hb">Best <span class="hv" id="hB">0</span></div><div class="hb">Combo <span class="hv" id="hC">x1</span></div></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#ef4444">CRASHED!</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame(lastMode)">↩ Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
-<div class="card">
-  <div class="badge">Coming Soon</div>
-  <div class="ico">🏎️</div>
-  <h1>DRIFT KING</h1>
-  <p>Master the art of the drift. Earn style points, tune your car, and conquer treacherous circuits in this high-octane drifting experience.</p>
-  <div class="features">
-    <span class="feat">🚗 10 Cars</span>
-    <span class="feat">🏁 8 Tracks</span>
-    <span class="feat">💨 Drift Combos</span>
-    <span class="feat">💰 Coin System</span>
-    <span class="feat">🎮 PC + Mobile</span>
-  </div>
-  <a class="back" href="../">← Back to Games</a>
-</div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d');
-let W,H;function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}resize();window.addEventListener('resize',resize);
-const COL='#f59e0b';
-const pts=[];for(let i=0;i<60;i++)pts.push({x:Math.random()*1000,y:Math.random()*1000,vx:(Math.random()-.5)*1.2,vy:(Math.random()-.5)*1.2,r:Math.random()*1.5+.3});
-function loop(){
-  ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(0,0,W,H);
-  pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
-    ctx.beginPath();ctx.arc(p.x*W/1000,p.y*H/1000,p.r,0,Math.PI*2);ctx.fillStyle=COL+'66';ctx.fill();
-  });
-  // Sweep line
-  const t=Date.now()*.0005;const x=(Math.sin(t)+1)/2*W;
-  const g=ctx.createLinearGradient(x-80,0,x+80,0);g.addColorStop(0,'transparent');g.addColorStop(.5,COL+'18');g.addColorStop(1,'transparent');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  requestAnimationFrame(loop);
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
+// Track: oval with corners
+const TRACK_W=90;
+function buildTrack(){const pts=[];const N=80;for(let i=0;i<N;i++){const a=i/N*Math.PI*2;const r=Math.min(W,H)*.35;const x=W/2+Math.cos(a)*r*(1+Math.sin(a*2)*.2);const y=H/2+Math.sin(a)*r*.65;pts.push({x,y});}return pts;}
+let car,track=[],smoke=[],score=0,bestScore=0,driftScore=0,combo=1,comboTimer=0,running=false,lastMode='pc';
+const keys={};
+function mkCar(){return{x:W/2+Math.min(W,H)*.35,y:H/2,angle:Math.PI/2,speed:0,steer:0,drift:0,hp:100,vx:0,vy:0,skid:0};}
+function startGame(m){lastMode=m;track=buildTrack();car=mkCar();smoke=[];score=0;driftScore=0;combo=1;comboTimer=0;running=true;document.getElementById('menu').style.display='none';document.getElementById('gameOver').style.display='none';document.getElementById('hud').style.display='flex';}
+window.addEventListener('keydown',e=>keys[e.key]=true);window.addEventListener('keyup',e=>keys[e.key]=false);
+function update(){
+  const gas=keys['ArrowUp']||keys['w']||keys['W'];
+  const brake=keys['ArrowDown']||keys['s']||keys['S'];
+  const left=keys['ArrowLeft']||keys['a']||keys['A'];
+  const right=keys['ArrowRight']||keys['d']||keys['D'];
+  if(gas)car.speed=Math.min(car.speed+.2,8);
+  else if(brake)car.speed=Math.max(car.speed-.25,-3);
+  else car.speed*=.97;
+  const steerAmt=.055*(1-Math.abs(car.speed)*.03);
+  if(left)car.angle-=steerAmt*car.speed*.7;
+  if(right)car.angle+=steerAmt*car.speed*.7;
+  // Drift: when turning fast + braking
+  const drifting=(left||right)&&(brake||(Math.abs(car.speed)>5));
+  if(drifting){car.drift=Math.min(car.drift+.08,1);}else{car.drift=Math.max(car.drift-.04,0);}
+  const grip=1-car.drift*.6;
+  car.vx=car.vx*.92+Math.cos(car.angle)*car.speed*(1-grip*.5);
+  car.vy=car.vy*.92+Math.sin(car.angle)*car.speed*(1-grip*.5);
+  car.vx+=Math.cos(car.angle)*car.speed*grip*.2;
+  car.vy+=Math.sin(car.angle)*car.speed*grip*.2;
+  car.x+=car.vx;car.y+=car.vy;
+  // Keep on track approximation — find nearest track point
+  let minD=99999,minI=0;
+  for(let i=0;i<track.length;i++){const d=Math.hypot(car.x-track[i].x,car.y-track[i].y);if(d<minD){minD=d;minI=i;}}
+  if(minD>TRACK_W){car.hp-=1;if(car.hp<=0)endGame();}
+  // Drift score
+  if(car.drift>.3&&Math.abs(car.speed)>2){
+    driftScore+=car.drift*car.speed*.5;
+    if(driftScore>100){score+=Math.round(combo*10);driftScore=0;combo=Math.min(combo+1,8);comboTimer=120;}
+  }else if(car.drift<.1){if(comboTimer===0&&combo>1)combo=Math.max(1,combo-1);driftScore=Math.max(0,driftScore-1);}
+  if(comboTimer>0)comboTimer--;
+  bestScore=Math.max(bestScore,score);
+  // Smoke
+  if(car.drift>.4){smoke.push({x:car.x-Math.cos(car.angle)*14,y:car.y-Math.sin(car.angle)*14,life:30,r:3+Math.random()*4});}
+  for(let i=smoke.length-1;i>=0;i--){smoke[i].life--;smoke[i].r+=.3;if(smoke[i].life<=0)smoke.splice(i,1);}
+  document.getElementById('hD').textContent=Math.round(driftScore);document.getElementById('hS').textContent=score;document.getElementById('hB').textContent=bestScore;document.getElementById('hC').textContent='x'+combo;
 }
-loop();
-</script>
-</body>
-</html>
+function endGame(){running=false;document.getElementById('hud').style.display='none';document.getElementById('goS').textContent=score;document.getElementById('gameOver').style.display='flex';}
+function draw(){
+  ctx.fillStyle='#0a0505';ctx.fillRect(0,0,W,H);
+  // Track
+  ctx.save();ctx.strokeStyle='#1a0a0a';ctx.lineWidth=TRACK_W*2;ctx.beginPath();track.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.closePath();ctx.stroke();
+  ctx.strokeStyle='#2a1010';ctx.lineWidth=TRACK_W*1.9;ctx.beginPath();track.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.closePath();ctx.stroke();
+  ctx.strokeStyle='#3a1515';ctx.lineWidth=TRACK_W*1.7;ctx.setLineDash([20,15]);ctx.beginPath();track.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+  ctx.restore();
+  // Smoke
+  for(const s of smoke){ctx.save();ctx.globalAlpha=s.life/30*.4;ctx.fillStyle='#888';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();ctx.restore();}
+  // Car
+  ctx.save();ctx.translate(car.x,car.y);ctx.rotate(car.angle);ctx.fillStyle='#ef4444';ctx.shadowColor='#ef4444';ctx.shadowBlur=20;ctx.fillRect(-16,-9,32,18);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-6,-7,14,14);ctx.restore();ctx.shadowBlur=0;
+  // HP bar
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(10,H-22,150,8);ctx.fillStyle='#34d399';ctx.fillRect(10,H-22,150*(car.hp/100),8);
+}
+function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>
