@@ -14,5 +14,6 @@
   "migrations": [
     { "tag": "v1", "new_classes": ["GameRoom"] },
     { "tag": "v2", "new_classes": [] }
-  ]
+  ],
+  "first_party_worker": true
 }
