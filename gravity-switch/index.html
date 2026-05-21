@@ -499,7 +499,7 @@ function mpConnect(code){
 }
 function mpSendState(){
   if(!mpWs||!mpConnected||mpWs.readyState!==1)return;
-  try{mpWs.send(JSON.stringify({type:'state',y:py,score,gravDir,alive:running}));}catch{}
+  try{mpWs.send(JSON.stringify({type:'state',y:P.y,score,gravDir,alive:running}));}catch{}
 }
 function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
 // Show peer scores on HUD

@@ -308,8 +308,8 @@ function drawFloor(){
       const p3=ISO.toScreen(gx*t,(gy+1)*t);
       const d=(Math.abs(gx)+Math.abs(gy))%2;
       ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.lineTo(p3.x,p3.y);ctx.closePath();
-      ctx.fillStyle=d?'rgba(244,114,182,.04)':'rgba(251,146,60,.03)';
-      ctx.strokeStyle='rgba(255,255,255,.03)';ctx.lineWidth=.5;
+      ctx.fillStyle=d?'rgba(244,114,182,.1)':'rgba(251,146,60,.08)';
+      ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=.5;
       ctx.fill();ctx.stroke();
     }
   }

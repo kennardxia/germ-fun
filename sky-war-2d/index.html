@@ -225,7 +225,7 @@ function makePlane(type,team,x,y,isAI){
     fireCd:0,fireRate:t.fire,
     team,name:t.name,col:t.col,icon:t.icon,type,
     isAI,
-    w:52,h:28,
+    w:70,h:38,
     facing:team===1?1:-1,
     wpnIdx:0,
     ammos:[...WEAPONS.map(w=>w.ammo)],
@@ -554,7 +554,7 @@ function drawPlane(p){
   ctx.save();ctx.translate(p.x,p.y);
   if(p.hitFlash>0&&p.hitFlash%2){ctx.globalAlpha=.5;}
   ctx.scale(p.facing,1);
-  ctx.shadowColor=p.col;ctx.shadowBlur=14+4*Math.sin(Date.now()*.008);
+  ctx.shadowColor=p.col;ctx.shadowBlur=20+6*Math.sin(Date.now()*.008);
   const w=p.w,h=p.h;
 
   // Engine exhaust glow behind plane
@@ -883,7 +883,7 @@ function drawMpPeers(){
     const peer=mpPeers[id];
     if(!peer.alive)continue;
     // Draw peer plane using same drawPlane logic but create a temp object
-    const tmp={x:peer.x,y:peer.y,vx:peer.vx,vy:peer.vy,hp:peer.hp,maxHp:PLANE_TYPES[peer.planeType].hp,w:52,h:28,type:peer.planeType,col:peer.col,name:peer.name,facing:peer.facing,alive:true,hitFlash:0};
+    const tmp={x:peer.x,y:peer.y,vx:peer.vx,vy:peer.vy,hp:peer.hp,maxHp:PLANE_TYPES[peer.planeType].hp,w:70,h:38,type:peer.planeType,col:peer.col,name:peer.name,facing:peer.facing,alive:true,hitFlash:0};
     drawPlane(tmp);
     // Peer label
     ctx.save();ctx.font='bold 10px Segoe UI';ctx.textAlign='center';ctx.fillStyle=peer.col;ctx.shadowColor=peer.col;ctx.shadowBlur=6;

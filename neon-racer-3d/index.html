@@ -223,10 +223,10 @@ function projectSegment(playerPos,idx,curveX){
 function draw3D(){
   // Sky gradient
   const sky=ctx.createLinearGradient(0,0,0,H*.6);
-  sky.addColorStop(0,'#0a0510');sky.addColorStop(.6,'#0d1020');
+  sky.addColorStop(0,'#080525');sky.addColorStop(.6,'#0e1238');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   // Ground
-  ctx.fillStyle='#080810';ctx.fillRect(0,H*.5,W,H*.5);
+  ctx.fillStyle='#060414';ctx.fillRect(0,H*.5,W,H*.5);
 
   const totalLen=track.length*SEG_H;
   let curveAcc=0;
