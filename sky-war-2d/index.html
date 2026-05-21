@@ -186,11 +186,11 @@ let p1PlaneIdx=0,p2PlaneIdx=1;
 let wave=1,totalCoins=0,kills1=0;
 
 const PLANE_TYPES=[
-  {name:'Fighter',hp:100,spd:4.5,fire:8,icon:'✈️',col:'#38bdf8',desc:'Balanced',aggression:.6},
-  {name:'Interceptor',hp:80,spd:6,fire:6,icon:'🛩️',col:'#f472b6',desc:'Fast',aggression:.8},
-  {name:'Bomber',hp:140,spd:3.2,fire:14,icon:'🛫',col:'#f59e0b',desc:'Tank',aggression:.45},
-  {name:'Ghost',hp:70,spd:5.5,fire:5,icon:'👻',col:'#a78bfa',desc:'Stealth',aggression:.75},
-  {name:'Dragon',hp:110,spd:4,fire:10,icon:'🐉',col:'#ef4444',desc:'Power',aggression:.9},
+  {name:'Fighter',    hp:100,spd:4.5, fire:8, icon:'✈️', col:'#38bdf8',desc:'Balanced · Canon',   aggression:.6,  shootCol:'#7dd3fc',bulletShape:'tracer'},
+  {name:'Interceptor',hp:80, spd:6.2, fire:5, icon:'🛩️', col:'#f472b6',desc:'Speed · Hit&Run',   aggression:.8,  shootCol:'#fda4af',bulletShape:'needle'},
+  {name:'Bomber',     hp:150,spd:3.0, fire:15,icon:'🛫', col:'#f59e0b',desc:'Armored · Heavy',   aggression:.42, shootCol:'#fcd34d',bulletShape:'bomb'},
+  {name:'Ghost',      hp:72, spd:5.5, fire:5, icon:'👻', col:'#a78bfa',desc:'Stealth · Evasive', aggression:.72, shootCol:'#c4b5fd',bulletShape:'orb'},
+  {name:'Dragon',     hp:115,spd:4.2, fire:9, icon:'🐉', col:'#ef4444',desc:'Power · Burn',      aggression:.92, shootCol:'#f97316',bulletShape:'fire'},
 ];
 const WEAPONS=[
   {name:'Bullets',col:'#38bdf8',spd:12,dmg:8,rad:3,auto:true,ammo:-1},
@@ -327,66 +327,97 @@ function updateAI(p){
   const target=players[0];if(!target||!target.alive){p.vx*=.9;p.vy*=.9;return;}
   p.aiTimer--;
   const dx=target.x-p.x,dy=target.y-p.y;
-  const dist=Math.sqrt(dx*dx+dy*dy);
+  const dist=Math.sqrt(dx*dx+dy*dy)||1;
+  const pt=PLANE_TYPES[p.type]||PLANE_TYPES[0];
 
-  // 5-state machine
-  if(p.aiTimer<=0){
-    const hpRatio=p.hp/p.maxHp;
-    if(hpRatio<.3) p.aiState='recover';
-    else{
-      const r=Math.random();
-      const aggression=PLANE_TYPES[p.type]?.aggression||.6;
-      if(dist>280) p.aiState='approach';
-      else if(r<aggression*.55) p.aiState='burst';
-      else if(r<aggression*.55+.25) p.aiState='flank';
-      else p.aiState='evade';
+  // — Bullet avoidance: dodge incoming projectiles —
+  const incoming=bullets.find(b=>b.team!==p.team&&
+    Math.abs(b.x-p.x)<110&&Math.abs(b.y-p.y)<70&&
+    (b.vx*(p.x-b.x)+b.vy*(p.y-b.y))>0);
+  if(incoming){
+    const bLen=Math.sqrt(incoming.vx*incoming.vx+incoming.vy*incoming.vy)||1;
+    const perpX=-incoming.vy/bLen,perpY=incoming.vx/bLen;
+    const side=p.aiEvaseSide||(p.aiEvaseSide=Math.random()<.5?1:-1);
+    p.vx+=perpX*side*2.2;p.vy+=perpY*side*2.2;
+    p.aiState='evade';p.aiTimer=Math.max(p.aiTimer,16);
+  } else {
+    // — State machine with type-specific tactics —
+    if(p.aiTimer<=0){
+      p.aiEvaseSide=null;
+      const hpRatio=p.hp/p.maxHp;
+      if(hpRatio<.25){p.aiState='recover';}
+      else if(dist>320){p.aiState='approach';}
+      else{
+        const r=Math.random();
+        if(pt.bulletShape==='needle'){
+          // Interceptor: hit-and-run — burst then evade fast
+          p.aiState=r<.5?'burst':(r<.75?'evade':'flank');
+        } else if(pt.bulletShape==='bomb'){
+          // Bomber: hold medium range, spam
+          p.aiState=r<.3?'burst':(r<.65?'circle':'approach');
+          if(dist<160)p.aiState='circle'; // stay back
+        } else if(pt.bulletShape==='orb'){
+          // Ghost: evasive / unpredictable
+          p.aiState=r<.3?'burst':(r<.6?'evade':'flank');
+        } else if(pt.bulletShape==='fire'){
+          // Dragon: aggressive dive close range
+          p.aiState=r<.7?'burst':(r<.88?'flank':'evade');
+        } else {
+          // Fighter: balanced
+          p.aiState=r<.45?'burst':(r<.72?'flank':(r<.88?'evade':'circle'));
+        }
+      }
+      if(p.aiState==='flank'||p.aiState==='circle')
+        p.aiFlankDir=Math.random()<.5?1:-1;
+      p.aiTimer=48+Math.floor(Math.random()*68);
     }
-    p.aiTimer=50+Math.floor(Math.random()*80);
   }
 
-  const acc=.28;
+  const acc=.32;
   if(p.aiState==='approach'||p.aiState==='burst'){
-    // Approach: close to optimal range 180px
-    const targetDist=180;
-    const dmul=dist>targetDist?1:-1;
+    const optRange=pt.bulletShape==='bomb'?210:165;
+    const dmul=dist>optRange?1.0:-0.55;
     p.vx+=dx/dist*acc*dmul;p.vy+=dy/dist*acc*dmul;
-  } else if(p.aiState==='flank'){
-    // Circle from perpendicular angle
+  } else if(p.aiState==='circle'){
+    const cdir=p.aiFlankDir||1;
     const perp={x:-dy/dist,y:dx/dist};
-    p.vx+=perp.x*acc*1.5+dx/dist*acc*.2;
-    p.vy+=perp.y*acc*1.5+dy/dist*acc*.2;
+    p.vx+=perp.x*acc*cdir*1.4+dx/dist*acc*.1;
+    p.vy+=perp.y*acc*cdir*1.4+dy/dist*acc*.1;
+  } else if(p.aiState==='flank'){
+    const fdir=p.aiFlankDir||1;
+    const perp={x:-dy/dist,y:dx/dist};
+    p.vx+=perp.x*acc*fdir*1.7+dx/dist*acc*.2;
+    p.vy+=perp.y*acc*fdir*1.7+dy/dist*acc*.2;
   } else if(p.aiState==='evade'){
-    // Dodge perpendicular then away
     const perp={x:-dy/dist,y:dx/dist};
     const side=p.aiEvaseSide||(p.aiEvaseSide=Math.random()<.5?1:-1);
-    p.vx+=perp.x*acc*side*1.3-dx/dist*acc*.5;
-    p.vy+=perp.y*acc*side*1.3-dy/dist*acc*.5;
+    p.vx+=perp.x*acc*side*1.6-dx/dist*acc*.45;
+    p.vy+=perp.y*acc*side*1.6-dy/dist*acc*.45;
   } else { // recover
-    // Retreat away from target
     p.vx-=dx/dist*acc*.9;p.vy-=dy/dist*acc*.9;
   }
 
-  p.vx*=.9;p.vy*=.9;
+  p.vx*=.88;p.vy*=.88;
   p.vx=Math.max(-p.spd,Math.min(p.spd,p.vx));
   p.vy=Math.max(-p.spd,Math.min(p.spd,p.vy));
   p.x+=p.vx;p.y+=p.vy;
-  p.x=Math.max(p.w,Math.min(W-p.w,p.x));
-  p.y=Math.max(p.h+60,Math.min(H-p.h,p.y));
+  p.x=Math.max(p.w+8,Math.min(W-p.w-8,p.x));
+  p.y=Math.max(p.h+62,Math.min(H-p.h-8,p.y));
   p.facing=dx>0?1:-1;
   if(p.fireCd>0)p.fireCd--;
 
-  // Fire with lead-targeting during burst/flank states
-  if(dist<260&&p.fireCd<=0&&p.aiState!=='recover'){
-    // Predict target position based on bullet travel time
+  // — Lead-targeted firing —
+  const fireRange=pt.bulletShape==='bomb'?270:238;
+  if(dist<fireRange&&p.fireCd<=0&&p.aiState!=='recover'){
     const bspd=WEAPONS[p.wpnIdx].spd||12;
     const travelT=dist/Math.max(bspd,1);
-    const predX=target.x+target.vx*travelT*.25;
-    const predY=target.y+target.vy*travelT*.25;
+    const predX=target.x+target.vx*travelT*.32;
+    const predY=target.y+target.vy*travelT*.32;
     const aimDx=predX-p.x,aimDy=predY-p.y;
-    const aimDist=Math.sqrt(aimDx*aimDx+aimDy*aimDy);
+    const aimDist=Math.sqrt(aimDx*aimDx+aimDy*aimDy)||1;
     p.aimDir={x:aimDx/aimDist,y:aimDy/aimDist};
     fireWeapon(p);
-    if(p.aiState==='burst') p.aiEvaseSide=null; // reset evasion side after burst
+    if(p.aiState==='burst')p.aiFlankDir=null;
   }
 }
 
@@ -403,13 +434,19 @@ function fireWeapon(p){
     // AI: aim toward target with small spread
     const nx=p.aimDir.x+(Math.random()-.5)*.18;
     const ny=p.aimDir.y+(Math.random()-.5)*.18;
-    const nl=Math.sqrt(nx*nx+ny*ny);
-    bullets.push({x:p.x+p.aimDir.x*p.w/2,y:p.y+p.aimDir.y*p.w/2,vx:nx/nl*w.spd,vy:ny/nl*w.spd,team:p.team,col:w.col,r:w.rad,dmg:w.dmg,life:80,owner:p,explode:w.explode||false});
+    const nl=Math.sqrt(nx*nx+ny*ny)||1;
+    const _sc=PLANE_TYPES[p.type]||PLANE_TYPES[0];
+    const _bc=p.wpnIdx===0?_sc.shootCol:w.col;
+    const _bs=p.wpnIdx===0?_sc.bulletShape:'std';
+    bullets.push({x:p.x+p.aimDir.x*p.w/2,y:p.y+p.aimDir.y*p.w/2,vx:nx/nl*w.spd,vy:ny/nl*w.spd,team:p.team,col:_bc,r:w.rad,dmg:w.dmg,life:80,owner:p,explode:w.explode||false,bulletShape:_bs,planeCol:p.col});
   } else {
     const spread=p.wpnIdx===0?0.06:0.12;
+    const _sc2=PLANE_TYPES[p.type]||PLANE_TYPES[0];
+    const _bc2=p.wpnIdx===0?_sc2.shootCol:w.col;
+    const _bs2=p.wpnIdx===0?_sc2.bulletShape:'std';
     for(let i=0;i<1;i++){
       const a=(Math.random()-.5)*spread;
-      bullets.push({x:p.x+p.facing*p.w/2,y:p.y+a*50,vx:p.facing*w.spd+Math.cos(a)*p.facing,vy:Math.sin(a)*w.spd,team:p.team,col:w.col,r:w.rad,dmg:w.dmg,life:80,owner:p,explode:w.explode||false});
+      bullets.push({x:p.x+p.facing*p.w/2,y:p.y+a*50,vx:p.facing*w.spd+Math.cos(a)*p.facing,vy:Math.sin(a)*w.spd,team:p.team,col:_bc2,r:w.rad,dmg:w.dmg,life:80,owner:p,explode:w.explode||false,bulletShape:_bs2,planeCol:p.col});
     }
   }
 }
@@ -443,18 +480,39 @@ function updateBullets(){
 function killPlane(p,killer){
   p.alive=false;p.hp=0;
   if(killer){killer.kills++;if(killer.team===1)kills1++;}
-  // Coin drop
-  const c=5+Math.floor(Math.random()*8);
+  const c=5+Math.floor(wave*2.5+Math.random()*8);
   totalCoins+=c;popFloat(p.x,p.y,'+'+c+'💰');
-  // Explosion
-  explode(p.x,p.y,p.col,60);
-  feedMsg(killer?`${killer.icon} killed ${p.icon}`:'💥 Explosion!');
-  // Check game end
-  const alivePlanes=players.filter(pl=>pl.alive);
-  const aliveTeam1=alivePlanes.filter(pl=>pl.team===1).length;
-  const aliveTeam2=alivePlanes.filter(pl=>pl.team===2).length;
-  if(aliveTeam1===0||aliveTeam2===0){
-    setTimeout(()=>endGame(aliveTeam1>0?1:2),800);
+  explode(p.x,p.y,p.col,isLowEnd?30:60);
+  feedMsg(killer?`${killer.icon} ${killer.name} → ${p.icon}`:'💥 Explosion!');
+  const alive1=players.filter(pl=>pl.alive&&pl.team===1);
+  const alive2=players.filter(pl=>pl.alive&&pl.team===2);
+  if(alive1.length===0){
+    setTimeout(()=>endGame(2),800);
+  } else if(alive2.length===0){
+    if(gameMode==='1p'){
+      wave++;
+      feedMsg('🌊 WAVE '+wave+' INCOMING!');
+      document.getElementById('waveBadge').textContent='Wave '+wave;
+      // Partial heal between waves
+      if(players[0])players[0].hp=Math.min(players[0].maxHp,players[0].hp+25);
+      setTimeout(spawnAIWave,2000);
+    } else {
+      setTimeout(()=>endGame(1),800);
+    }
+  }
+}
+
+function spawnAIWave(){
+  const count=Math.min(2+wave,7);
+  for(let i=0;i<count;i++){
+    const typeIdx=wave<=2?(i%3)+1:Math.floor(Math.random()*PLANE_TYPES.length);
+    const ai=makePlane(typeIdx,2,W*.62+Math.random()*W*.32,H*.1+Math.random()*(H*.8),true);
+    const mul=1+wave*.13;
+    ai.hp=Math.round(ai.maxHp*mul);ai.maxHp=ai.hp;
+    ai.facing=-1;
+    if(wave>=3&&Math.random()<.4)ai.wpnIdx=1;
+    if(wave>=5&&Math.random()<.28)ai.wpnIdx=2;
+    players.push(ai);
   }
 }
 
@@ -525,11 +583,11 @@ function update(){
   updateHUD();
 }
 
+let _sky2dGrad=null,_sky2dH=0;
 function drawBg(){
-  // Sky
-  const sky=ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,'#020c1a');sky.addColorStop(.5,'#051830');sky.addColorStop(1,'#020c1a');
-  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  // Sky (cached gradient)
+  if(!_sky2dGrad||_sky2dH!==H){_sky2dGrad=ctx.createLinearGradient(0,0,0,H);_sky2dGrad.addColorStop(0,'#020c1a');_sky2dGrad.addColorStop(.5,'#051830');_sky2dGrad.addColorStop(1,'#020c1a');_sky2dH=H;}
+  ctx.fillStyle=_sky2dGrad;ctx.fillRect(0,0,W,H);
   // Cloud layer 1 (far)
   ctx.save();ctx.globalAlpha=.06;ctx.fillStyle='#fff';
   bgObjects.forEach(o=>{
@@ -554,7 +612,7 @@ function drawPlane(p){
   ctx.save();ctx.translate(p.x,p.y);
   if(p.hitFlash>0&&p.hitFlash%2){ctx.globalAlpha=.5;}
   ctx.scale(p.facing,1);
-  ctx.shadowColor=p.col;ctx.shadowBlur=20+6*Math.sin(Date.now()*.008);
+  if(!isLowEnd){ctx.shadowColor=p.col;ctx.shadowBlur=18+5*Math.sin(Date.now()*.008);}
   const w=p.w,h=p.h;
 
   // Engine exhaust glow behind plane
@@ -695,20 +753,52 @@ function drawBullets(){
       ctx.fillStyle=b.col;
       ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(5,-2.5);ctx.lineTo(5,2.5);ctx.closePath();ctx.fill();
     } else {
-      // Bullet: glowing dot + short velocity trail
-      const ang=Math.atan2(b.vy,b.vx);
-      const spd=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
-      // Trail
-      const tg=ctx.createLinearGradient(b.x-b.vx*1.8,b.y-b.vy*1.8,b.x,b.y);
-      tg.addColorStop(0,'transparent');tg.addColorStop(1,b.col+'88');
-      ctx.strokeStyle=tg;ctx.lineWidth=b.r*1.2;
-      ctx.beginPath();ctx.moveTo(b.x-b.vx*1.8,b.y-b.vy*1.8);ctx.lineTo(b.x,b.y);ctx.stroke();
-      // Core dot
-      ctx.shadowColor=b.col;ctx.shadowBlur=8;
-      ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-      ctx.fillStyle=b.col;ctx.fill();
-      ctx.beginPath();ctx.arc(b.x,b.y,b.r*.45,0,Math.PI*2);
-      ctx.fillStyle='#fff';ctx.fill();
+      const bs=b.bulletShape||'tracer';
+      if(bs==='needle'){
+        // Interceptor — thin fast needle with long glow trail
+        const ang2=Math.atan2(b.vy,b.vx);
+        ctx.save();ctx.translate(b.x,b.y);ctx.rotate(ang2);
+        ctx.shadowColor=b.col;ctx.shadowBlur=5;
+        ctx.strokeStyle=b.col+'55';ctx.lineWidth=4;
+        ctx.beginPath();ctx.moveTo(-16,0);ctx.lineTo(0,0);ctx.stroke();
+        ctx.strokeStyle=b.col;ctx.lineWidth=1.8;
+        ctx.beginPath();ctx.moveTo(-12,0);ctx.lineTo(4,0);ctx.stroke();
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(3,0,1.2,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      } else if(bs==='bomb'){
+        // Bomber — chunky glowing ball with aura
+        ctx.shadowColor=b.col;ctx.shadowBlur=16;
+        const rg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*3);
+        rg.addColorStop(0,'#fff');rg.addColorStop(.35,b.col);rg.addColorStop(1,b.col+'00');
+        ctx.fillStyle=rg;ctx.beginPath();ctx.arc(b.x,b.y,b.r*3,0,Math.PI*2);ctx.fill();
+      } else if(bs==='orb'){
+        // Ghost — semi-transparent pulsing orb
+        const pulse=.5+.3*Math.sin(Date.now()*.05+b.x*.08);
+        ctx.shadowColor=b.col;ctx.shadowBlur=10;
+        ctx.globalAlpha=.55+pulse*.3;
+        ctx.beginPath();ctx.arc(b.x,b.y,b.r*1.6,0,Math.PI*2);
+        ctx.fillStyle=b.col;ctx.fill();
+        ctx.globalAlpha=.9;
+        ctx.beginPath();ctx.arc(b.x,b.y,b.r*.55,0,Math.PI*2);
+        ctx.fillStyle='#fff';ctx.fill();ctx.globalAlpha=1;
+      } else if(bs==='fire'){
+        // Dragon — fiery burst with trailing sparks
+        ctx.shadowColor='#ff4400';ctx.shadowBlur=20;
+        const rg2=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*3.2);
+        rg2.addColorStop(0,'#fff');rg2.addColorStop(.28,'#ff8800');rg2.addColorStop(.6,b.col);rg2.addColorStop(1,b.col+'00');
+        ctx.fillStyle=rg2;ctx.beginPath();ctx.arc(b.x,b.y,b.r*3.2,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ff660088';
+        for(let s=0;s<3;s++){ctx.beginPath();ctx.arc(b.x-b.vx*(s+1)*.9,b.y-b.vy*(s+1)*.9,b.r*(1.2-s*.3),0,Math.PI*2);ctx.fill();}
+      } else {
+        // Tracer (Fighter default + fallback)
+        const tg=ctx.createLinearGradient(b.x-b.vx*2,b.y-b.vy*2,b.x,b.y);
+        tg.addColorStop(0,'transparent');tg.addColorStop(1,b.col+'88');
+        ctx.strokeStyle=tg;ctx.lineWidth=b.r*1.2;
+        ctx.beginPath();ctx.moveTo(b.x-b.vx*2,b.y-b.vy*2);ctx.lineTo(b.x,b.y);ctx.stroke();
+        ctx.shadowColor=b.col;ctx.shadowBlur=8;
+        ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=b.col;ctx.fill();
+        ctx.beginPath();ctx.arc(b.x,b.y,b.r*.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+      }
     }
     ctx.restore();ctx.shadowBlur=0;
   });

@@ -530,49 +530,97 @@ function getNearestEnemy(){
 function updateEnemies(){
   enemies.forEach(e=>{
     e.stateTimer++;
-    // AI state machine
     const dx=player.x-e.worldX,dy=player.y-e.worldY,dz=player.z-e.worldZ;
-    const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
+    const dist=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+    const distH=Math.sqrt(dx*dx+dy*dy)||1;
 
-    if(dist<150)e.state='circle';
-    else if(e.hp<e.maxHp*.25)e.state='flee';
-    else e.state='chase';
+    // — Time-based state transitions (not every frame) —
+    if(e.stateTimer>=(e.stateDur||80)){
+      e.stateTimer=0;e.stateDur=55+Math.floor(Math.random()*75);
+      const hpRatio=e.hp/e.maxHp;
+      if(hpRatio<.22){
+        e.state='flee';
+      } else if(distH<130){
+        e.state=Math.random()<.55?'circle':'flank';
+      } else {
+        const r=Math.random();
+        if(e.typeIdx===0){        // Scout — aggressive direct
+          e.state=r<.65?'chase':(r<.88?'dive':'circle');
+        } else if(e.typeIdx===1){ // Fighter — balanced
+          e.state=r<.38?'chase':(r<.62?'flank':(r<.82?'circle':'dive'));
+        } else if(e.typeIdx===2){ // Bomber — hold distance, circle
+          e.state=r<.28?'chase':(r<.62?'circle':'flank');
+        } else if(e.typeIdx===3){ // ACE — smart flanker
+          e.state=r<.28?'chase':(r<.58?'flank':(r<.82?'dive':'circle'));
+        } else {                  // BOSS — relentless chase
+          e.state=r<.72?'chase':'circle';
+        }
+        if(dist>550)e.state='chase';
+      }
+      if(e.state==='circle'||e.state==='flank')
+        e.circleDir=(e.circleDir&&Math.random()<.35)?-e.circleDir:(Math.random()<.5?1:-1);
+    }
 
     const desiredAngle=Math.atan2(dy,dx);
     let da=desiredAngle-e.angle;
     while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
 
     if(e.state==='chase'){
-      e.angle+=da*.04;
+      e.angle+=da*.045;
       e.worldX+=Math.cos(e.angle)*e.speed;
       e.worldY+=Math.sin(e.angle)*e.speed;
-      e.worldZ+=dz/dist*e.speed*.5;
+      e.worldZ+=dz/dist*e.speed*.6;
     } else if(e.state==='circle'){
-      e.angle+=.03;
-      e.worldX+=Math.cos(e.angle)*e.speed;
-      e.worldY+=Math.sin(e.angle)*e.speed;
+      const cd=e.circleDir||1;
+      e.angle+=.028*cd;
+      e.worldX+=Math.cos(e.angle)*e.speed*1.05;
+      e.worldY+=Math.sin(e.angle)*e.speed*1.05;
+      e.worldZ+=(player.z-e.worldZ)*.018;
+    } else if(e.state==='flank'){
+      const perpA=desiredAngle+Math.PI*.5*(e.circleDir||1);
+      const dpa=perpA-e.angle;
+      e.angle+=dpa*.06;
+      e.worldX+=Math.cos(e.angle)*e.speed*1.2;
+      e.worldY+=Math.sin(e.angle)*e.speed*1.2;
+      e.worldZ+=(player.z-e.worldZ)*.025;
+    } else if(e.state==='dive'){
+      e.angle+=da*.05;
+      e.worldX+=Math.cos(e.angle)*e.speed*1.1;
+      e.worldY+=Math.sin(e.angle)*e.speed*1.1;
+      const diveZ=player.z+(e.worldZ>player.z?-80:80);
+      e.worldZ+=(diveZ-e.worldZ)*.04;
     } else {
-      // flee
-      e.angle+=da*.04+Math.PI;
-      e.worldX-=Math.cos(desiredAngle)*e.speed*1.2;
-      e.worldY-=Math.sin(desiredAngle)*e.speed*1.2;
+      // flee — fly away fast
+      const fleeAng=desiredAngle+Math.PI;
+      e.angle+=(fleeAng-e.angle)*.05;
+      e.worldX+=Math.cos(fleeAng)*e.speed*1.3;
+      e.worldY+=Math.sin(fleeAng)*e.speed*1.3;
     }
 
     // Clamp
     e.worldZ=Math.max(30,Math.min(800,e.worldZ));
 
-    // Enemy fire
+    // Enemy fire with lead-targeting for elite types
     e.fireTimer--;
-    if(e.fireTimer<=0&&dist<600){
-      e.fireTimer=e.fireRate;
-      const spd=6;
-      const nx=dx/dist,ny=dy/dist,nz=dz/dist;
+    const fireRange=e.typeIdx===4?800:(e.typeIdx===3?650:480);
+    if(e.fireTimer<=0&&dist<fireRange){
+      e.fireTimer=Math.max(e.fireRate*.55,e.fireRate-(wave||1)*2);
+      const spd=e.typeIdx>=3?8.5:6;
+      let tx=player.x,ty=player.y,tz=player.z;
+      if(e.typeIdx>=3){
+        const lead=distH/spd*.28;
+        tx+=player.vx*lead;ty+=player.vy*lead;tz+=player.vz*lead;
+      }
+      const tdx=tx-e.worldX,tdy=ty-e.worldY,tdz=tz-e.worldZ;
+      const tdist=Math.sqrt(tdx*tdx+tdy*tdy+tdz*tdz)||1;
+      const spread=e.typeIdx>=3?.25:.45;
+      const bsize=e.typeIdx===4?8:(e.typeIdx===2?6:4);
       enemyBullets.push({
         x:e.worldX,y:e.worldY,z:e.worldZ,
-        vx:nx*spd+(Math.random()-.5)*.5,
-        vy:ny*spd+(Math.random()-.5)*.5,
-        vz:nz*spd,
-        dmg:e.dmg,life:80,col:e.col,size:5
+        vx:tdx/tdist*spd+(Math.random()-.5)*spread,
+        vy:tdy/tdist*spd+(Math.random()-.5)*spread,
+        vz:tdz/tdist*spd+(Math.random()-.5)*.15,
+        dmg:e.dmg,life:90,col:e.col,size:bsize
       });
     }
   });
@@ -699,23 +747,23 @@ function updateWave(){
 }
 
 // ===== DRAW =====
+let _sw3dSkyG=null,_sw3dHG=null,_sw3dGH=0;
 function draw(){
-  // Sky gradient — visible dark blue sky
-  const skyGrad=ctx.createLinearGradient(0,0,0,H);
-  skyGrad.addColorStop(0,'#010a1f');
-  skyGrad.addColorStop(.4,'#0d1b40');
-  skyGrad.addColorStop(1,'#060e22');
-  ctx.fillStyle=skyGrad;ctx.fillRect(0,0,W,H);
+  // Sky gradient (cached per resize)
+  if(!_sw3dSkyG||_sw3dGH!==H){
+    _sw3dSkyG=ctx.createLinearGradient(0,0,0,H);
+    _sw3dSkyG.addColorStop(0,'#010a1f');_sw3dSkyG.addColorStop(.4,'#0d1b40');_sw3dSkyG.addColorStop(1,'#060e22');
+    _sw3dHG=ctx.createLinearGradient(0,H*.55,0,H*.75);
+    _sw3dHG.addColorStop(0,'rgba(124,58,237,0)');_sw3dHG.addColorStop(.5,'rgba(6,182,212,.18)');_sw3dHG.addColorStop(1,'rgba(0,0,0,0)');
+    _sw3dGH=H;
+  }
+  ctx.fillStyle=_sw3dSkyG;ctx.fillRect(0,0,W,H);
 
   // Stars
   drawStars();
 
-  // Horizon glow
-  const hGrad=ctx.createLinearGradient(0,H*.55,0,H*.75);
-  hGrad.addColorStop(0,'rgba(124,58,237,0)');
-  hGrad.addColorStop(.5,'rgba(6,182,212,.18)');
-  hGrad.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=hGrad;ctx.fillRect(0,H*.4,W,H*.5);
+  // Horizon glow (cached)
+  ctx.fillStyle=_sw3dHG;ctx.fillRect(0,H*.4,W,H*.5);
 
   // Ground grid
   drawGroundGrid();
@@ -732,12 +780,24 @@ function draw(){
     ctx.globalAlpha=1;ctx.restore();
   });
 
-  // Enemy bullets
+  // Enemy bullets (differentiated by type/size)
   enemyBullets.forEach(b=>{
     const sp=enemyScreenPos({worldX:b.x,worldY:b.y,worldZ:b.z});
     if(!sp)return;
-    ctx.beginPath();ctx.arc(sp.px,sp.py,b.size*sp.scale,0,Math.PI*2);
-    ctx.fillStyle=b.col;ctx.shadowColor=b.col;ctx.shadowBlur=8;ctx.fill();
+    const bs=Math.max(2,b.size*sp.scale);
+    ctx.shadowColor=b.col;ctx.shadowBlur=bs<5?6:14;
+    if(b.size>=7){
+      // Large bullet (Bomber/BOSS) — glowing orb
+      const rg=ctx.createRadialGradient(sp.px,sp.py,0,sp.px,sp.py,bs*2);
+      rg.addColorStop(0,'#fff');rg.addColorStop(.4,b.col);rg.addColorStop(1,b.col+'00');
+      ctx.fillStyle=rg;ctx.beginPath();ctx.arc(sp.px,sp.py,bs*2,0,Math.PI*2);ctx.fill();
+    } else {
+      ctx.beginPath();ctx.arc(sp.px,sp.py,bs,0,Math.PI*2);
+      ctx.fillStyle=b.col;ctx.fill();
+      ctx.beginPath();ctx.arc(sp.px,sp.py,bs*.4,0,Math.PI*2);
+      ctx.fillStyle='#fff';ctx.fill();
+    }
+    ctx.shadowBlur=0;
   });
 
   // Enemies — sort by distance (far to near)
