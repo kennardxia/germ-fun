@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "germ-fun",
   "compatibility_date": "2026-05-20",
   "main": "workers/game-server.js",
@@ -12,6 +12,7 @@
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_classes": ["GameRoom"] }
+    { "tag": "v1", "new_classes": ["GameRoom"] },
+    { "tag": "v2", "new_classes": [] }
   ]
 }
