@@ -118,6 +118,12 @@ export class GameRoom {
       return new Response('Expected WebSocket upgrade', { status: 426 });
     }
 
+    // Origin check — defense in depth (main worker already enforces CORS)
+    const wsOrigin = request.headers.get('Origin') || '';
+    if (wsOrigin && !ALLOWED_ORIGINS.has(wsOrigin)) {
+      return new Response('Origin not allowed', { status: 403 });
+    }
+
     // Check room capacity
     const sessions = this.state.getWebSockets();
     if (sessions.length >= MAX_PLAYERS) {
@@ -152,6 +158,9 @@ export class GameRoom {
   }
 
   async webSocketMessage(ws, rawMessage) {
+    // Drop oversized messages immediately — prevents memory/CPU abuse
+    if (typeof rawMessage !== 'string' || rawMessage.length > 2048) return;
+
     const meta = ws.deserializeAttachment();
     if (!meta) { ws.close(1008, 'No session'); return; }
 
@@ -272,7 +281,9 @@ export default {
     const wsMatch = path.match(/^\/room\/([A-Z2-9]{6})\/ws$/);
     if (wsMatch) {
       const code = wsMatch[1];
-      const gameType = url.searchParams.get('game') || 'skywar2d';
+      const rawGame = url.searchParams.get('game') || 'skywar2d';
+      // Validate game type before routing to DO
+      const gameType = ALLOWED_KEYS[rawGame] ? rawGame : 'skywar2d';
 
       if (!env.GAME_ROOM) {
         return new Response('GAME_ROOM binding missing', { status: 500 });
