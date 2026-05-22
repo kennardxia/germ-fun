@@ -864,8 +864,15 @@ function popFloat(x,y,txt){
 }
 
 function loop(){
-  if(running)update();
-  draw();
+  if(running){
+    try{update();}catch(e){
+      console.error('[Sky-War-2D] update crash:',e);
+      running=false;
+      document.getElementById('goTitle').textContent='⚠ Error — reload page';
+      document.getElementById('go').classList.add('show');
+    }
+  }
+  try{draw();}catch(e){console.error('[Sky-War-2D] draw error:',e);}
   requestAnimationFrame(loop);
 }
 if(typeof loopStarted==='undefined'){var loopStarted=true;requestAnimationFrame(loop);}

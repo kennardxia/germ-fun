@@ -118,7 +118,7 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
       <p>Play with friends via room code</p>
       <div class="ctrl-hint">Up to 6 players</div>
     </div>
-    <div class="mode-card" onclick="startGame('mobile')">
+    <div class="mode-card" id="mobileCard" onclick="startGame('mobile')">
       <span class="icon">📱</span>
       <h3>Mobile Mode</h3>
       <p>Touch d-pad and action buttons optimized for touchscreens</p>
@@ -1095,10 +1095,17 @@ function gameLoop(){
     requestAnimationFrame(gameLoop);
     return;
   }
-  updatePlayer();
-  updateEnemies();
-  updateBullets();
-  updateWave();
+  try{
+    updatePlayer();
+    updateEnemies();
+    updateBullets();
+    updateWave();
+  }catch(e){
+    console.error('[Sky-War-3D] update crash:',e);
+    running=false;
+    document.getElementById('goTitle').textContent='⚠ Error — reload page';
+    document.getElementById('gameOver').style.display='flex';
+  }
   draw();
   // Auto-fire for PC when holding
   if(gameMode==='pc'&&mouse.down){
@@ -1149,6 +1156,19 @@ function mpConnect(code){
 }
 function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
 function setMpPlayerCount(n){const el=document.getElementById('mpPlayers');if(el)el.textContent=`Players: ${n}`;}
+// Auto-detect touch device — highlight Mobile Mode card
+if('ontouchstart' in window||navigator.maxTouchPoints>0){
+  const mc=document.getElementById('mobileCard');
+  if(mc){
+    mc.style.borderColor='rgba(251,191,36,.8)';
+    mc.style.background='rgba(251,191,36,.08)';
+    mc.style.boxShadow='0 0 18px rgba(251,191,36,.35)';
+    const badge=document.createElement('div');
+    badge.textContent='✓ Recommended for your device';
+    badge.style.cssText='color:#fbbf24;font-size:.7rem;font-weight:700;margin-top:.4rem;letter-spacing:.03em';
+    mc.appendChild(badge);
+  }
+}
 // Send state at 20hz piggy-backed on gameLoop
 const _mpOrig=updateHUD;
 function updateHUD(){
