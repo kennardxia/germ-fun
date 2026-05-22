@@ -187,6 +187,8 @@ function reflect(dir,angle){
 }
 
 canvas.addEventListener('click',()=>{if(running){levelData.targets.forEach(t=>t.hit=false);fireBeam();}});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();if(running){levelData.targets.forEach(t=>t.hit=false);fireBeam();}},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const dx=e.touches[0].clientX-e.touches[0].target.getBoundingClientRect().left;camAngle+=(dx<W*.4?-.05:dx>W*.6?.05:0);},{passive:false});
 window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='ArrowLeft')camAngle-=.1;if(e.key==='ArrowRight')camAngle+=.1;});
 window.addEventListener('keyup',e=>keys[e.key]=false);
 
@@ -305,7 +307,7 @@ function draw(){
   }
 }
 
-function loop(){draw();requestAnimationFrame(loop);}
+function loop(){try{draw();}catch(e){console.error('[laser-bounce-3d]',e);}requestAnimationFrame(loop);}
 loop();
 </script>
 </body>

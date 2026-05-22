@@ -399,9 +399,10 @@ function endGame(){
   document.getElementById('gameOver').style.display='flex';
 }
 
+(function(){if(!('ontouchstart' in window)&&!navigator.maxTouchPoints)return;let jId=-1,jX=0,jY=0;const K=keys,D=22;function setJ(u,d,l,r){K.w=K.W=K.KeyW=K.arrowup=K.ArrowUp=u;K.s=K.S=K.KeyS=K.arrowdown=K.ArrowDown=d;K.a=K.A=K.KeyA=K.arrowleft=K.ArrowLeft=l;K.d=K.D=K.KeyD=K.arrowright=K.ArrowRight=r;}canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.clientX<W*.45&&jId<0){jId=t.identifier;jX=t.clientX;jY=t.clientY;}else{mx=t.clientX-W/2;my=t.clientY-H/2;fireHeld=true;}}},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jId){const dx=t.clientX-jX,dy=t.clientY-jY;setJ(dy<-D,dy>D,dx<-D,dx>D);}else{mx=t.clientX-W/2;my=t.clientY-H/2;}}},{passive:false});canvas.addEventListener('touchend',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jId){jId=-1;setJ(false,false,false,false);}else{fireHeld=false;}}},{passive:false});})();
 function loop(){
-  update();
-  draw();
+  try{update();}catch(e){console.error('[asteroid-belt-3d]',e);}
+  try{draw();}catch(e){console.error('[asteroid-belt-3d draw]',e);}
   requestAnimationFrame(loop);
 }
 loop();

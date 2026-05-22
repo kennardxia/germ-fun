@@ -340,7 +340,8 @@ function draw(){
   }
 }
 
-function loop(){update();draw();requestAnimationFrame(loop);}
+(function(){if(!('ontouchstart' in window)&&!navigator.maxTouchPoints)return;const K=keys;function proc(t,v){const r=t.clientX/W;if(r<.2){K.KeyA=K.ArrowLeft=v;}else if(r>.8){K.KeyD=K.ArrowRight=v;}else if(r<.5){K.KeyW=K.ArrowUp=v;}else{K.KeyF=v;}}canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)proc(t,true);},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();K.KeyA=K.ArrowLeft=K.KeyD=K.ArrowRight=K.KeyW=K.ArrowUp=K.KeyF=false;for(const t of e.touches)proc(t,true);},{passive:false});canvas.addEventListener('touchend',e=>{e.preventDefault();K.KeyA=K.ArrowLeft=K.KeyD=K.ArrowRight=K.KeyW=K.ArrowUp=K.KeyF=false;for(const t of e.touches)proc(t,true);},{passive:false});})();
+function loop(){try{update();}catch(e){console.error('[pixel-duel-3d]',e);}try{draw();}catch(e){console.error('[pixel-duel-3d draw]',e);}requestAnimationFrame(loop);}
 loop();
 </script>
 </body>

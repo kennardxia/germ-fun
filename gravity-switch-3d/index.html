@@ -295,8 +295,8 @@ function update(){
 }
 
 function loop(){
-  if(running)update();
-  draw();
+  if(running){try{update();}catch(e){console.error('[gravity-switch-3d]',e);running=false;}}
+  try{draw();}catch(e){console.error('[gravity-switch-3d draw]',e);}
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

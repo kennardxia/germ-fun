@@ -98,6 +98,7 @@ function draw(){
   for(let i=0;i<wins[0];i++){ctx.fillStyle='#a855f7';ctx.beginPath();ctx.arc(20+i*14,12,5,0,Math.PI*2);ctx.fill();}
   for(let i=0;i<wins[1];i++){ctx.fillStyle='#ec4899';ctx.beginPath();ctx.arc(GW-20-i*14,12,5,0,Math.PI*2);ctx.fill();}
 }
-function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+(function(){if(!('ontouchstart' in window)&&!navigator.maxTouchPoints)return;const K=keys;function proc(t,v){const r=t.clientX/W;if(r<.2){K.a=K.A=K.ArrowLeft=v;}else if(r>.8){K.d=K.D=K.ArrowRight=v;}else if(r<.5){K.w=K.W=K.ArrowUp=v;}else if(r<.7){K.j=K.J=v;}else{K.k=K.K=v;}}canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)proc(t,true);},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();K.a=K.A=K.ArrowLeft=K.d=K.D=K.ArrowRight=K.w=K.W=K.ArrowUp=K.j=K.J=K.k=K.K=false;for(const t of e.touches)proc(t,true);},{passive:false});canvas.addEventListener('touchend',e=>{e.preventDefault();K.a=K.A=K.ArrowLeft=K.d=K.D=K.ArrowRight=K.w=K.W=K.ArrowUp=K.j=K.J=K.k=K.K=false;for(const t of e.touches)proc(t,true);},{passive:false});})();
+function loop(){if(running){try{update();}catch(e){console.error('[pixel-duel]',e);running=false;}}try{draw();}catch(e){console.error('[pixel-duel draw]',e);}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script></body></html>

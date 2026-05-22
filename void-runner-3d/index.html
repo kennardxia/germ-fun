@@ -331,7 +331,7 @@ function draw(){
   }
 }
 
-function loop(){update();draw();requestAnimationFrame(loop);}
+function loop(){try{update();}catch(e){console.error('[void-runner-3d]',e);}try{draw();}catch(e){console.error('[void-runner-3d draw]',e);}requestAnimationFrame(loop);}
 loop();
 </script>
 </body>

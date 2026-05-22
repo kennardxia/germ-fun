@@ -15,7 +15,8 @@ let mirrors=[],targets=[];
 let mx=W/2,my=H/2;
 canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;calcLaser();});
 canvas.addEventListener('click',shoot);
-canvas.addEventListener('touchend',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();mx=e.changedTouches[0].clientX-r.left;my=e.changedTouches[0].clientY-r.top;shoot();},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();mx=e.changedTouches[0].clientX-r.left;my=e.changedTouches[0].clientY-r.top;calcLaser();},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();mx=e.changedTouches[0].clientX-r.left;my=e.changedTouches[0].clientY-r.top;calcLaser();shoot();},{passive:false});
 
 const LEVELS=[
   {mirrors:[{x:.5,y:.3,a:Math.PI/4},{x:.7,y:.6,a:-Math.PI/4}],targets:[{x:.8,y:.2},{x:.2,y:.8}],shots:4},
@@ -93,6 +94,6 @@ function draw(){
   // Aim dot
   ctx.save();ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(mx,my,5,0,Math.PI*2);ctx.fill();ctx.restore();
 }
-function loop(){draw();requestAnimationFrame(loop);}
+function loop(){try{draw();}catch(e){console.error('[laser-bounce]',e);}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script></body></html>

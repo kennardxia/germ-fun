@@ -49,6 +49,7 @@ function draw(){
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(10,H-18,180,8);ctx.fillStyle='#10b981';ctx.fillRect(10,H-18,180*(ship.hp/ship.maxHp),8);
 }
 const stars=Array.from({length:150},()=>[Math.random()*4000-2000,Math.random()*3000-1500,Math.random()<.1?2:1]);
-function loop(){if(running)update();draw();requestAnimationFrame(loop);}
+(function(){if(!('ontouchstart' in window)&&!navigator.maxTouchPoints)return;let jId=-1,jX=0,jY=0;const K=keys,D=22;function setJ(u,d,l,r){K.w=K.W=K.KeyW=K.arrowup=K.ArrowUp=u;K.s=K.S=K.KeyS=K.arrowdown=K.ArrowDown=d;K.a=K.A=K.KeyA=K.arrowleft=K.ArrowLeft=l;K.d=K.D=K.KeyD=K.arrowright=K.ArrowRight=r;}canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.clientX<W*.45&&jId<0){jId=t.identifier;jX=t.clientX;jY=t.clientY;}else{mx=t.clientX;my=t.clientY;fire();}}},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jId){const dx=t.clientX-jX,dy=t.clientY-jY;setJ(dy<-D,dy>D,dx<-D,dx>D);}else{mx=t.clientX;my=t.clientY;}}},{passive:false});canvas.addEventListener('touchend',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jId){jId=-1;setJ(false,false,false,false);}}},{passive:false});})();
+function loop(){if(running){try{update();}catch(e){console.error('[space-miner]',e);running=false;}}try{draw();}catch(e){console.error('[space-miner draw]',e);}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script></body></html>
