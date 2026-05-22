@@ -218,7 +218,7 @@ const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
 const isLowEnd=navigator.hardwareConcurrency<=4;
 let W,H;
-function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);}
+function resize(){W=canvas.width=Math.min(window.innerWidth,1920);H=canvas.height=Math.min(window.innerHeight,1080);starCache=null;}
 resize();window.addEventListener('resize',resize);
 
 // ===== GAME STATE =====
@@ -633,7 +633,9 @@ function updateBullets(){
     const b=bullets[i];
     // Homing
     if(b.homing&&enemies.length>0){
-      const e=enemies[0];
+      // Target nearest enemy instead of always enemies[0]
+      let e=enemies[0];let bestD=Infinity;
+      for(const en of enemies){const dd=(b.x-en.worldX)**2+(b.y-en.worldY)**2+(b.z-en.worldZ)**2;if(dd<bestD){bestD=dd;e=en;}}
       const dx=e.worldX-b.x,dy=e.worldY-b.y,dz=e.worldZ-b.z;
       const d=Math.sqrt(dx*dx+dy*dy+dz*dz);
       if(d>0){b.vx+=(dx/d)*.3;b.vy+=(dy/d)*.3;b.vz+=(dz/d)*.3;}
@@ -1087,7 +1089,7 @@ function gameOver(){
 // ===== GAME LOOP =====
 function pauseGame(){
   running=!running;
-  if(running)requestAnimationFrame(gameLoop);
+  // do NOT call rAF here — gameLoop never fully stops, it draws every frame even when paused
 }
 function gameLoop(){
   if(!running){
@@ -1171,10 +1173,10 @@ if('ontouchstart' in window||navigator.maxTouchPoints>0){
 }
 // Send state at 20hz piggy-backed on gameLoop
 const _mpOrig=updateHUD;
-function updateHUD(){
+updateHUD=function(){
   _mpOrig();
   if(mpConnected&&mpWs&&mpWs.readyState===1){mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;try{mpWs.send(JSON.stringify({type:'state',x:player.x||0,y:player.y||0,z:player.z||0,hp:player.hp||0,alive:running}));}catch{}}}
-}
+};
 </script>
 </body>
 </html>
