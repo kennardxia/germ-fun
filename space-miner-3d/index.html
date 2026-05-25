@@ -21,6 +21,21 @@ button:hover{transform:scale(1.05)}
 #shopPanel h3{color:#22c55e;margin-bottom:8px}
 .shopItem{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .shopItem button{padding:3px 8px;font-size:.7rem;background:#16a34a;border-radius:4px}
+
+/* ── Mode Select ── */
+#modeScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a1a,#0d0d2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:1.8rem;padding:1rem;text-align:center}
+#modeScreen h1{font-size:clamp(1.8rem,5vw,3.5rem);font-weight:900;letter-spacing:-1px;margin-bottom:.2rem}
+#modeScreen>p{color:#64748b;font-size:.95rem;max-width:400px}
+.mode-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;padding:0 .5rem}
+.mode-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:18px;padding:1.6rem 1.4rem;text-align:center;cursor:pointer;transition:.22s;min-width:170px;max-width:240px}
+.mode-card:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);transform:translateY(-4px)}
+.mode-card .icon{font-size:3rem;margin-bottom:.6rem;display:block}
+.mode-card h3{font-size:1.05rem;font-weight:800;margin-bottom:.35rem;color:#e2e8f0}
+.mode-card p{font-size:.78rem;color:#64748b;line-height:1.5}
+.mode-card .ctrl-hint{margin-top:.65rem;background:rgba(0,0,0,.3);border-radius:8px;padding:.4rem .6rem;font-size:.68rem;color:#94a3b8;line-height:1.7}
+.mode-card.mp-card{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.mode-card.mp-card:hover{border-color:rgba(16,185,129,.65);background:rgba(16,185,129,.12)}
+#modeScreen h1{background:linear-gradient(135deg,#a78bfa,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 </style>
 </head>
 <body>
@@ -39,18 +54,28 @@ button:hover{transform:scale(1.05)}
   <div class="shopItem"><span>Engine<br><small style="color:#64748b">+spd</small></span><button onclick="buyUpgrade('engine')">45¢</button></div>
   <small style="color:#64748b;display:block;margin-top:6px">Press B to open/close</small>
 </div>
-<div id="menu">
-  <h1>Space Miner 3D</h1>
-  <p>Pilot a mining ship in 3D space. Drill asteroids for minerals, sell cargo for credits, defend against pirate raids. Upgrade your ship!</p>
-  <p style="color:#22c55e;font-size:.85rem">WASD: Move · Mouse: Aim/Fire · B: Shop</p>
-  <button onclick="startGame()">▶ Launch Ship</button>
-  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+<div id="modeScreen">
+  <h1>⛏️ Space Miner 3D</h1>
+  <p>Drill asteroids for minerals — upgrade — defend against pirates</p>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="startGame()">
+      <span class="icon">🎮</span>
+      <h3>Solo Mission</h3>
+      <p>Mine and upgrade your ship alone</p><div class="ctrl-hint">WASD — Move<br>Mouse — Aim / Fire<br>B — Shop</div>
+    </div>
+    <div class="mode-card mp-card" onclick="openMultiplayer()">
+      <span class="icon">🌐</span>
+      <h3>Online MP</h3>
+      <p>Mine together — fight pirates</p><div class="ctrl-hint">Up to 6 players</div>
+    </div>
+  </div>
+  <a href="../" style="color:#475569;font-size:.8rem;text-decoration:none;margin-top:.3rem">← Back to Games</a>
 </div>
-    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.07)"><div class="mi">🌐</div><h3>Online</h3><p>Co-op mining run</p></div>
+<h3>Online</h3><p>Co-op mining run</p></div>
 <div id="gameOver">
   <h2>Ship Destroyed</h2>
   <p>Credits earned: <b id="goScore">0</b></p>
-  <button onclick="startGame()">▶ New Mission</button>
+  <button onclick="startGame()">New Mission</button>
   <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
 </div>
 <canvas id="c"></canvas>
@@ -110,7 +135,7 @@ function startGame(){
   credits=0;wave=0;pirate_wave=0;cargo=0;maxCargo=50;
   upgrades={laser:0,shield:0,cargo:0,engine:0};
   running=true;
-  document.getElementById('menu').style.display='none';
+  document.getElementById('modeScreen').style.display='none';
   document.getElementById('gameOver').style.display='none';
   document.getElementById('hud').style.display='flex';
   spawnAsteroids();

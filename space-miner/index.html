@@ -5,7 +5,7 @@
 <div id="hud" style="display:none"><div class="hb">HP <span class="hv" id="hH">100</span></div><div class="hb">Ore <span class="hv" id="hO">0</span></div><div class="hb">Wave <span class="hv" id="hW">1</span></div><div class="hb">Score <span class="hv" id="hS">0</span></div></div>
 <div id="shop"><h2 style="font-size:1.8rem;font-weight:900;color:#fbbf24">⛏️ UPGRADE SHOP</h2><div style="color:#94a3b8;font-size:.9rem">Ore: <span id="shopOre" style="color:#fbbf24;font-weight:900"></span></div><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center" id="shopItems"></div><button class="bigbtn" onclick="nextWaveStart()">Continue Mining →</button>
     <button onclick="openMultiplayer()" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px">🌐 Online</button></div>
-<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#fbbf24">DESTROYED</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame()">↩ Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#fbbf24">DESTROYED</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame()">← Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');

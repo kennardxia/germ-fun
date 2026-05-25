@@ -204,7 +204,7 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif
     <div class="go-stat"><div class="n" id="goScore">0</div><div class="l">Score</div></div>
     <div class="go-stat"><div class="n" id="goWave">1</div><div class="l">Wave</div></div>
   </div>
-  <button class="btn-restart" onclick="resetGame()">↩ Play Again</button>
+  <button class="btn-restart" onclick="resetGame()">← Play Again</button>
   <a href="../" style="color:#64748b;font-size:.85rem;text-decoration:none">← Back to Games</a>
 </div>
 
@@ -1131,7 +1131,7 @@ function openMultiplayer(){
   if(!ov){
     ov=document.createElement('div');
     ov.id='mpOverlay';
-    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
     ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#38bdf8">🌐 Online Multiplayer</h2><p style="color:#64748b">Up to 6 players — share the room code</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">CREATE ROOM</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem">JOIN ROOM</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer">✕ Close</button>';
     document.body.appendChild(ov);
   }else{ov.style.display='flex';}

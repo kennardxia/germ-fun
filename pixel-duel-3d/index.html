@@ -27,6 +27,21 @@ button{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none
 button:hover{transform:scale(1.05)}
 #back{position:fixed;top:10px;left:10px;background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.5);color:#a78bfa;padding:6px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:700;z-index:99}
 #gameOver{display:none}
+
+/* ── Mode Select ── */
+#modeScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a1a,#0d0d2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:1.8rem;padding:1rem;text-align:center}
+#modeScreen h1{font-size:clamp(1.8rem,5vw,3.5rem);font-weight:900;letter-spacing:-1px;margin-bottom:.2rem}
+#modeScreen>p{color:#64748b;font-size:.95rem;max-width:400px}
+.mode-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;padding:0 .5rem}
+.mode-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:18px;padding:1.6rem 1.4rem;text-align:center;cursor:pointer;transition:.22s;min-width:170px;max-width:240px}
+.mode-card:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);transform:translateY(-4px)}
+.mode-card .icon{font-size:3rem;margin-bottom:.6rem;display:block}
+.mode-card h3{font-size:1.05rem;font-weight:800;margin-bottom:.35rem;color:#e2e8f0}
+.mode-card p{font-size:.78rem;color:#64748b;line-height:1.5}
+.mode-card .ctrl-hint{margin-top:.65rem;background:rgba(0,0,0,.3);border-radius:8px;padding:.4rem .6rem;font-size:.68rem;color:#94a3b8;line-height:1.7}
+.mode-card.mp-card{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.mode-card.mp-card:hover{border-color:rgba(16,185,129,.65);background:rgba(16,185,129,.12)}
+#modeScreen h1{background:linear-gradient(135deg,#f87171,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 </style>
 </head>
 <body>
@@ -46,24 +61,27 @@ button:hover{transform:scale(1.05)}
     </div>
   </div>
 </div>
-<div id="menu">
-  <h1>Pixel Duel 3D</h1>
-  <p>3D pixel fighting — pseudo-3D arena, special moves, and unique fighters. Best of 3 rounds!</p>
-  <div class="controls-grid">
-    <div class="ctrl-card"><b>Player 1</b>WASD: Move/Jump<br>F: Attack · G: Special</div>
-    <div class="ctrl-card"><b>Player 2 / CPU</b>Arrows: Move/Jump<br>K: Attack · L: Special</div>
+<div id="modeScreen">
+  <h1>⚔️ Pixel Duel 3D</h1>
+  <p>Pseudo-3D arena fighter — special moves — best of 3 rounds</p>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="startGame('1p')">
+      <span class="icon">🤖</span>
+      <h3>VS CPU</h3>
+      <p>Fight AI — best of 3 rounds</p><div class="ctrl-hint">WASD: Move/Jump<br>F: Attack · G: Special</div>
+    </div>
+    <div class="mode-card mp-card" onclick="openMultiplayer()">
+      <span class="icon">🌐</span>
+      <h3>Online MP</h3>
+      <p>Fight friends via room code</p><div class="ctrl-hint">Up to 6 players</div>
+    </div>
   </div>
-  <div style="display:flex;gap:12px">
-    <button onclick="startGame('1p')">▶ vs CPU</button>
-    <button onclick="startGame('2p')" style="background:linear-gradient(135deg,#0891b2,#0e7490)">▶ 2 Player</button>
-  </div>
-    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.07)"><div class="mi">🌐</div><h3>Online</h3><p>1v1 online duel</p></div>
-  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+  <a href="../" style="color:#475569;font-size:.8rem;text-decoration:none;margin-top:.3rem">← Back to Games</a>
 </div>
 <div id="gameOver">
   <h2 id="goTitle">P1 Wins!</h2>
   <p id="goMsg">Best of 3 complete</p>
-  <button onclick="startGame(lastMode)">▶ Rematch</button>
+  <button onclick="startGame(lastMode)">Rematch</button>
   <button onclick="document.getElementById(\'gameOver\').style.display=\'none\';document.getElementById(\'menu\').style.display=\'flex\'">Menu</button>
 </div>
 <canvas id="c"></canvas>
@@ -108,7 +126,7 @@ function startGame(mode){
   p2=mkFighter(2,'right');
   if(mode==='1p')p2.cpu=true;
   particles=[];hitFlashes=[];round=1;p1Wins=0;p2Wins=0;running=true;roundOver=false;
-  document.getElementById('menu').style.display='none';
+  document.getElementById('modeScreen').style.display='none';
   document.getElementById('gameOver').style.display='none';
   document.getElementById('hud').style.display='block';
   document.getElementById('rndNum').textContent=round;

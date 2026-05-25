@@ -17,6 +17,21 @@ button{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none
 button:hover{transform:scale(1.05)}
 #back{position:fixed;top:10px;left:10px;background:rgba(217,119,6,.3);border:1px solid rgba(217,119,6,.5);color:#f59e0b;padding:6px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:700}
 #gameOver{display:none}
+
+/* ── Mode Select ── */
+#modeScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a1a,#0d0d2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:1.8rem;padding:1rem;text-align:center}
+#modeScreen h1{font-size:clamp(1.8rem,5vw,3.5rem);font-weight:900;letter-spacing:-1px;margin-bottom:.2rem}
+#modeScreen>p{color:#64748b;font-size:.95rem;max-width:400px}
+.mode-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;padding:0 .5rem}
+.mode-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:18px;padding:1.6rem 1.4rem;text-align:center;cursor:pointer;transition:.22s;min-width:170px;max-width:240px}
+.mode-card:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);transform:translateY(-4px)}
+.mode-card .icon{font-size:3rem;margin-bottom:.6rem;display:block}
+.mode-card h3{font-size:1.05rem;font-weight:800;margin-bottom:.35rem;color:#e2e8f0}
+.mode-card p{font-size:.78rem;color:#64748b;line-height:1.5}
+.mode-card .ctrl-hint{margin-top:.65rem;background:rgba(0,0,0,.3);border-radius:8px;padding:.4rem .6rem;font-size:.68rem;color:#94a3b8;line-height:1.7}
+.mode-card.mp-card{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.mode-card.mp-card:hover{border-color:rgba(16,185,129,.65);background:rgba(16,185,129,.12)}
+#modeScreen h1{background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 </style>
 </head>
 <body>
@@ -27,18 +42,28 @@ button:hover{transform:scale(1.05)}
   <span>Best: <b id="hBest">0</b></span>
   <span>Combo: <b id="hCombo">x1</b></span>
 </div>
-<div id="menu">
-  <h1>Drift King 3D</h1>
-  <p>Behind-car perspective drift racing. Master slides on mountain hairpins. Chain combos for maximum style score!</p>
-  <p style="color:#f59e0b;font-size:.85rem">WASD / Arrow Keys · Hold A/D to drift</p>
-  <button onclick="startGame()">▶ Start Race</button>
-  <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
+<div id="modeScreen">
+  <h1>🚗 Drift King 3D</h1>
+  <p>Master the art of drift — score combos on 3D tracks</p>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="startGame()">
+      <span class="icon">🎮</span>
+      <h3>Solo Race</h3>
+      <p>Master drift combos vs AI</p><div class="ctrl-hint">Arrow Keys / WASD — Steer<br>Hold — Drift</div>
+    </div>
+    <div class="mode-card mp-card" onclick="openMultiplayer()">
+      <span class="icon">🌐</span>
+      <h3>Online MP</h3>
+      <p>Race and drift against friends</p><div class="ctrl-hint">Up to 6 players</div>
+    </div>
+  </div>
+  <a href="../" style="color:#475569;font-size:.8rem;text-decoration:none;margin-top:.3rem">← Back to Games</a>
 </div>
-    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(234,179,8,.4);background:rgba(234,179,8,.07)"><div class="mi">🌐</div><h3>Online</h3><p>Race others on track</p></div>
+<h3>Online</h3><p>Race others on track</p></div>
 <div id="gameOver">
   <h2>Race Over</h2>
   <p>Final Style Score: <b id="goScore">0</b></p>
-  <button onclick="startGame()">▶ Race Again</button>
+  <button onclick="startGame()">Race Again</button>
   <button onclick="location.href='../index.html'" style="background:rgba(255,255,255,.1)">← Back</button>
 </div>
 <canvas id="c"></canvas>
@@ -78,7 +103,7 @@ function mkCar(){return{pos:0,x:0,speed:0,driftAngle:0,drifting:false,driftScore
 
 function startGame(){
   car=mkCar();smoke=[];score=0;combo=1;comboTimer=0;running=true;
-  document.getElementById('menu').style.display='none';
+  document.getElementById('modeScreen').style.display='none';
   document.getElementById('gameOver').style.display='none';
   document.getElementById('hud').style.display='flex';
 }

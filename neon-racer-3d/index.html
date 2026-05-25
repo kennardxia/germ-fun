@@ -27,6 +27,20 @@ canvas{display:block;touch-action:none;image-rendering:pixelated}
 #notify.show{opacity:1}
 #finish{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}
 #finish h2{font-size:2.5rem;font-weight:900;color:#06b6d4}
+
+/* ── Mode Select ── */
+#modeScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a1a,#0d0d2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:1.8rem;padding:1rem;text-align:center}
+#modeScreen h1{font-size:clamp(1.8rem,5vw,3.5rem);font-weight:900;letter-spacing:-1px;margin-bottom:.2rem}
+#modeScreen>p{color:#64748b;font-size:.95rem;max-width:400px}
+.mode-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;padding:0 .5rem}
+.mode-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:18px;padding:1.6rem 1.4rem;text-align:center;cursor:pointer;transition:.22s;min-width:170px;max-width:240px}
+.mode-card:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);transform:translateY(-4px)}
+.mode-card .icon{font-size:3rem;margin-bottom:.6rem;display:block}
+.mode-card h3{font-size:1.05rem;font-weight:800;margin-bottom:.35rem;color:#e2e8f0}
+.mode-card p{font-size:.78rem;color:#64748b;line-height:1.5}
+.mode-card .ctrl-hint{margin-top:.65rem;background:rgba(0,0,0,.3);border-radius:8px;padding:.4rem .6rem;font-size:.68rem;color:#94a3b8;line-height:1.7}
+.mode-card.mp-card{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.mode-card.mp-card:hover{border-color:rgba(16,185,129,.65);background:rgba(16,185,129,.12)}
 </style>
 </head>
 <body>
@@ -39,9 +53,10 @@ canvas{display:block;touch-action:none;image-rendering:pixelated}
     <div class="mcard" data-t="1" onclick="pickT(this,1)"><div class="mi">🟡</div><h3>Desert Run</h3><p>High speed oval</p></div>
     <div class="mcard" data-t="2" onclick="pickT(this,2)"><div class="mi">🟣</div><h3>Storm Circuit</h3><p>Tight chicanes</p></div>
   </div>
-  <button class="mbtn" onclick="startGame()">▶ RACE</button>
+  <button class="mbtn" onclick="startGame()">RACE</button>
+    <button class="mbtn" style="background:linear-gradient(135deg,#10b981,#059669);border:none" onclick="openMultiplayer()">🌐 Online MP</button>
   <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
-  <a href="../neon-racer-2d/" style="color:#475569;font-size:.78rem">▶ Play 2D version</a>
+  <a href="../neon-racer-2d/" style="color:#475569;font-size:.78rem">Play 2D version</a>
 </div>
     <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.07)"><div class="mi">🌐</div><h3>Online</h3><p>Race head-to-head</p></div>
 
@@ -59,7 +74,7 @@ canvas{display:block;touch-action:none;image-rendering:pixelated}
 <div id="finish">
   <h2>🏆 RACE OVER</h2>
   <div style="font-size:1rem;color:#94a3b8">Your time: <span id="finTime" style="color:#f59e0b;font-weight:900"></span></div>
-  <button class="mbtn" onclick="startGame()">↩ Race Again</button>
+  <button class="mbtn" onclick="startGame()">← Race Again</button>
   <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
 </div>
 

@@ -24,19 +24,45 @@ canvas{display:block;touch-action:none}
 #waveMsg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:clamp(2rem,7vw,5rem);font-weight:900;color:#fff;text-shadow:0 0 60px #f472b6;opacity:0;pointer-events:none;z-index:80;transition:.2s}
 #waveMsg.show{opacity:1}
 #gameOver{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}
+
+/* ── Mode Select ── */
+#modeScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a1a,#0d0d2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:1.8rem;padding:1rem;text-align:center}
+#modeScreen h1{font-size:clamp(1.8rem,5vw,3.5rem);font-weight:900;letter-spacing:-1px;margin-bottom:.2rem}
+#modeScreen>p{color:#64748b;font-size:.95rem;max-width:400px}
+.mode-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;padding:0 .5rem}
+.mode-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:18px;padding:1.6rem 1.4rem;text-align:center;cursor:pointer;transition:.22s;min-width:170px;max-width:240px}
+.mode-card:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);transform:translateY(-4px)}
+.mode-card .icon{font-size:3rem;margin-bottom:.6rem;display:block}
+.mode-card h3{font-size:1.05rem;font-weight:800;margin-bottom:.35rem;color:#e2e8f0}
+.mode-card p{font-size:.78rem;color:#64748b;line-height:1.5}
+.mode-card .ctrl-hint{margin-top:.65rem;background:rgba(0,0,0,.3);border-radius:8px;padding:.4rem .6rem;font-size:.68rem;color:#94a3b8;line-height:1.7}
+.mode-card.mp-card{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.mode-card.mp-card:hover{border-color:rgba(16,185,129,.65);background:rgba(16,185,129,.12)}
+#modeScreen h1{background:linear-gradient(135deg,#f472b6,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 </style>
 </head>
 <body>
-<div id="menu">
-  <h1>💥 BULLET STORM 3D</h1>
-  <p style="color:#64748b">Isometric bullet hell — survive 30 waves</p>
-  <div class="mrow">
-    <div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div>
-    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(244,114,182,.4);background:rgba(244,114,182,.07)"><div class="mi">🌐</div><h3>Online</h3><p>Co-op survival</p></div><h3>PC Mode</h3><p>WASD + mouse aim</p></div>
-    <div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile</h3><p>Joystick + tap fire</p></div>
+<div id="modeScreen">
+  <h1>💥 Bullet Storm 3D</h1>
+  <p>Survive endless bullet waves — upgrade and outlast</p>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="startGame('pc')">
+      <span class="icon">🖥️</span>
+      <h3>PC Solo</h3>
+      <p>Mouse aim + keyboard movement</p><div class="ctrl-hint">WASD — Move<br>Mouse — Aim<br>Click — Fire</div>
+    </div>
+    <div class="mode-card mp-card" onclick="openMultiplayer()">
+      <span class="icon">🌐</span>
+      <h3>Online MP</h3>
+      <p>Survive together with friends</p><div class="ctrl-hint">Up to 6 players</div>
+    </div>
+    <div class="mode-card" onclick="startGame('mobile')">
+      <span class="icon">📱</span>
+      <h3>Mobile Solo</h3>
+      <p>Touch controls optimized for mobile</p><div class="ctrl-hint">Joystick — Move<br>Tap — Fire</div>
+    </div>
   </div>
-  <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
-  <a href="../bullet-storm/" style="color:#475569;font-size:.78rem">▶ Play 2D version</a>
+  <a href="../" style="color:#475569;font-size:.8rem;text-decoration:none;margin-top:.3rem">← Back to Games</a>
 </div>
 
 <div id="hud" style="display:none">
@@ -50,7 +76,7 @@ canvas{display:block;touch-action:none}
 <div id="gameOver">
   <h2 style="font-size:2.5rem;font-weight:900;color:#f472b6">GAME OVER</h2>
   <div style="font-size:1.2rem;color:#94a3b8">Score: <span id="goScore" style="color:#f59e0b;font-weight:900"></span></div>
-  <button class="bigbtn" onclick="startGame(lastMode)">↩ Retry</button>
+  <button class="bigbtn" onclick="startGame(lastMode)">← Retry</button>
   <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
 </div>
 
@@ -110,7 +136,7 @@ function startGame(mode){
   enemies=[];bullets=[];eBullets=[];
   score=0;wave=0;gameOver=false;
   spawnQueue=0;waveTimer=0;
-  document.getElementById('menu').style.display='none';
+  document.getElementById('modeScreen').style.display='none';
   document.getElementById('gameOver').style.display='none';
   document.getElementById('hud').style.display='flex';
   setupInput(mode);
