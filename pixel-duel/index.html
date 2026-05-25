@@ -3,7 +3,8 @@
 <body>
 <div id="menu"><h1>⚔️ PIXEL DUEL</h1><p style="color:#64748b">1v1 side-scrolling fighter — 4 characters — 3 rounds</p><div class="mrow"><div class="mcard" onclick="startGame('1p')"><div class="mi">🎮</div><h3>vs CPU</h3><p>WASD + J/K attack</p></div><div class="mcard" onclick="startGame('2p')"><div class="mi">👥</div><h3>2 Player</h3><p>P1 WASD | P2 Arrows</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <div id="hud" style="display:none"><div class="hb">P1 HP <span class="hv" id="hH1">100</span></div><div class="hb">Round <span class="hv" id="hR">1/3</span></div><div class="hb">P2 HP <span class="hv" id="hH2">100</span></div></div>
-<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#a855f7" id="goTxt">P1 WINS!</h2><button class="bigbtn" onclick="startGame(lastMode)">↩ Rematch</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#a855f7" id="goTxt">P1 WINS!</h2><button class="bigbtn" onclick="startGame(lastMode)">↩ Rematch</button>
+    <button onclick="openMultiplayer()" style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px">🌐 Online</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
@@ -101,4 +102,67 @@ function draw(){
 (function(){if(!('ontouchstart' in window)&&!navigator.maxTouchPoints)return;const K=keys;function proc(t,v){const r=t.clientX/W;if(r<.2){K.a=K.A=K.ArrowLeft=v;}else if(r>.8){K.d=K.D=K.ArrowRight=v;}else if(r<.5){K.w=K.W=K.ArrowUp=v;}else if(r<.7){K.j=K.J=v;}else{K.k=K.K=v;}}canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)proc(t,true);},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();K.a=K.A=K.ArrowLeft=K.d=K.D=K.ArrowRight=K.w=K.W=K.ArrowUp=K.j=K.J=K.k=K.K=false;for(const t of e.touches)proc(t,true);},{passive:false});canvas.addEventListener('touchend',e=>{e.preventDefault();K.a=K.A=K.ArrowLeft=K.d=K.D=K.ArrowRight=K.w=K.W=K.ArrowUp=K.j=K.J=K.k=K.K=false;for(const t of e.touches)proc(t,true);},{passive:false});})();
 function loop(){if(running){try{update();}catch(e){console.error('[pixel-duel]',e);running=false;}}try{draw();}catch(e){console.error('[pixel-duel draw]',e);}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
+
+// ===== ONLINE MULTIPLAYER =====
+const MP_WORKER='https://germ-fun.kennardxia.workers.dev';const MP_GAME='pixelduel';
+let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
+function openMultiplayer(){
+  let ov=document.getElementById('mpOverlay');
+  if(!ov){
+    ov=document.createElement('div');ov.id='mpOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#ef4444">🌐 Online Duel</h2><p style="color:#64748b">1v1 fighter — best of 3 rounds</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">Create Room</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#ef4444,#ef4444aa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">Join Room</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#ef4444,#ef4444aa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer;margin-top:.4rem">✕ Close</button>';
+    document.body.appendChild(ov);
+  }else{ov.style.display='flex';}
+}
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{const r=await fetch(MP_WORKER+'/room/create?game='+MP_GAME,{method:'POST'});if(!r.ok)throw 0;const {code}=await r.json();document.getElementById('mpCode').textContent=code;document.getElementById('mpCode').style.display='block';setMpStatus('Share code: '+code);mpConnect(code);}catch{setMpStatus('⚠ Server unreachable. Play offline.');}
+}
+function mpJoin(){const c=(document.getElementById('mpCodeInput').value||'').trim().toUpperCase();if(c.length!==6){setMpStatus('Enter a 6-character room code');return;}mpConnect(c);}
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){try{mpWs.close();}catch{}}
+  try{
+    mpWs=new WebSocket(MP_WORKER.replace('https','wss')+'/room/'+code+'/ws?game='+MP_GAME);
+    mpWs.onopen=()=>setMpStatus('Connected — room '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>{
+      let d;try{d=JSON.parse(ev.data);}catch{return;}
+      if(!d||typeof d!=='object')return;
+      if(d.type==='welcome'){mpPlayerId=d.id;mpConnected=true;setMpStatus('✓ In room — Player '+d.count);setMpPlayerCount(d.count);const ov=document.getElementById('mpOverlay');if(ov)ov.style.display='none';startGame('1p');}
+      else if(d.type==='join'){setMpPlayerCount(d.count);}
+      else if(d.type==='leave'){delete mpPeers[d.id];}
+      else if(d.type==='state'&&d.from&&d.from!==mpPlayerId){mpPeers[d.from]={x:+d.x||0,y:+d.y||0,hp:Math.max(0,+d.hp||0),facing:+d.facing||1};}
+    };
+  }catch{setMpStatus('⚠ WebSocket unavailable');}
+}
+function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
+function setMpPlayerCount(n){const el=document.getElementById('mpPlayers');if(el)el.textContent='Players in room: '+n;}
+const _mpOrigdraw=draw;
+draw=function(){
+  _mpOrigdraw();
+  if(mpConnected&&mpWs&&mpWs.readyState===1){mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;try{mpWs.send(JSON.stringify({type:'state',x:players&&players[0]?players[0].x:0,y:players&&players[0]?players[0].y:0,hp:players&&players[0]?players[0].hp:100,facing:players&&players[0]?players[0].facing:1}));}catch{}}}
+  if(!mpConnected||!Object.keys(mpPeers).length)return;
+  let _gi=0;
+  for(const _id in mpPeers){
+    const _p=mpPeers[_id];_gi++;
+    const _cx=typeof _p.x==='number'?_p.x:0;
+    const _cy=typeof _p.y==='number'?_p.y:0;
+    ctx.save();
+    ctx.globalAlpha=0.55;
+    ctx.beginPath();ctx.arc(_cx,_cy,14,0,Math.PI*2);
+    ctx.fillStyle='#ef4444';ctx.fill();
+    ctx.font='bold 9px Segoe UI';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('P'+(_gi+1),_cx,_cy);
+    ctx.globalAlpha=1;
+    // HP bar
+    if(typeof _p.hp==='number'){
+      ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(_cx-14,_cy+17,28,5);
+      ctx.fillStyle='#ef4444';ctx.fillRect(_cx-14,_cy+17,28*(_p.hp/100),5);
+    }
+    ctx.restore();
+  }
+};
 </script></body></html>

@@ -3,7 +3,8 @@
 <body>
 <div id="menu"><h1>🤖 MECH ARENA</h1><p style="color:#64748b">Arena combat — 4 mech types — survive wave after wave</p><div class="mrow"><div class="mcard" onclick="startGame('pc')"><div class="mi">🖥️</div><h3>PC Mode</h3><p>WASD move + mouse aim + click fire</p></div><div class="mcard" onclick="startGame('mobile')"><div class="mi">📱</div><h3>Mobile</h3><p>Dual joystick</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <div id="hud" style="display:none"><div class="hb">HP <span class="hv" id="hH">100</span></div><div class="hb">Kills <span class="hv" id="hK">0</span></div><div class="hb">Wave <span class="hv" id="hW">1</span></div><div class="hb">Heat <span class="hv" id="hHt">0%</span></div></div>
-<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#10b981">DESTROYED</h2><div style="color:#94a3b8">Kills: <span id="goK" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame(lastMode)">↩ Retry</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#10b981">DESTROYED</h2><div style="color:#94a3b8">Kills: <span id="goK" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame(lastMode)">↩ Retry</button>
+    <button onclick="openMultiplayer()" style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px">🌐 Online</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
@@ -55,4 +56,67 @@ function draw(){
 (function(){if(!('ontouchstart' in window)&&!navigator.maxTouchPoints)return;let jId=-1,jX=0,jY=0;const K=keys,D=22;function setJ(u,d,l,r){K.w=K.W=K.KeyW=K.arrowup=K.ArrowUp=u;K.s=K.S=K.KeyS=K.arrowdown=K.ArrowDown=d;K.a=K.A=K.KeyA=K.arrowleft=K.ArrowLeft=l;K.d=K.D=K.KeyD=K.arrowright=K.ArrowRight=r;}canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.clientX<W*.45&&jId<0){jId=t.identifier;jX=t.clientX;jY=t.clientY;}else{mx=t.clientX;my=t.clientY;fireHeld=true;}}},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jId){const dx=t.clientX-jX,dy=t.clientY-jY;setJ(dy<-D,dy>D,dx<-D,dx>D);}else{mx=t.clientX;my=t.clientY;}}},{passive:false});canvas.addEventListener('touchend',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jId){jId=-1;setJ(false,false,false,false);}else{fireHeld=false;}}},{passive:false});})();
 function loop(){if(running){try{update();}catch(e){console.error('[mech-arena]',e);running=false;}}try{draw();}catch(e){console.error('[mech-arena draw]',e);}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
+
+// ===== ONLINE MULTIPLAYER =====
+const MP_WORKER='https://germ-fun.kennardxia.workers.dev';const MP_GAME='mecharena';
+let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
+function openMultiplayer(){
+  let ov=document.getElementById('mpOverlay');
+  if(!ov){
+    ov=document.createElement('div');ov.id='mpOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#10b981">🌐 Online Battle</h2><p style="color:#64748b">Co-op arena survival</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">Create Room</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#10b981,#10b981aa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">Join Room</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#10b981,#10b981aa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer;margin-top:.4rem">✕ Close</button>';
+    document.body.appendChild(ov);
+  }else{ov.style.display='flex';}
+}
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{const r=await fetch(MP_WORKER+'/room/create?game='+MP_GAME,{method:'POST'});if(!r.ok)throw 0;const {code}=await r.json();document.getElementById('mpCode').textContent=code;document.getElementById('mpCode').style.display='block';setMpStatus('Share code: '+code);mpConnect(code);}catch{setMpStatus('⚠ Server unreachable. Play offline.');}
+}
+function mpJoin(){const c=(document.getElementById('mpCodeInput').value||'').trim().toUpperCase();if(c.length!==6){setMpStatus('Enter a 6-character room code');return;}mpConnect(c);}
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){try{mpWs.close();}catch{}}
+  try{
+    mpWs=new WebSocket(MP_WORKER.replace('https','wss')+'/room/'+code+'/ws?game='+MP_GAME);
+    mpWs.onopen=()=>setMpStatus('Connected — room '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>{
+      let d;try{d=JSON.parse(ev.data);}catch{return;}
+      if(!d||typeof d!=='object')return;
+      if(d.type==='welcome'){mpPlayerId=d.id;mpConnected=true;setMpStatus('✓ In room — Player '+d.count);setMpPlayerCount(d.count);const ov=document.getElementById('mpOverlay');if(ov)ov.style.display='none';startGame('pc');}
+      else if(d.type==='join'){setMpPlayerCount(d.count);}
+      else if(d.type==='leave'){delete mpPeers[d.id];}
+      else if(d.type==='state'&&d.from&&d.from!==mpPlayerId){mpPeers[d.from]={x:+d.x||0,y:+d.y||0,angle:+d.angle||0,hp:Math.max(0,+d.hp||0),score:+d.score||0,alive:!!d.alive};}
+    };
+  }catch{setMpStatus('⚠ WebSocket unavailable');}
+}
+function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
+function setMpPlayerCount(n){const el=document.getElementById('mpPlayers');if(el)el.textContent='Players in room: '+n;}
+const _mpOrigdraw=draw;
+draw=function(){
+  _mpOrigdraw();
+  if(mpConnected&&mpWs&&mpWs.readyState===1){mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;try{mpWs.send(JSON.stringify({type:'state',x:mech?mech.x:0,y:mech?mech.y:0,angle:mech?mech.angle:0,hp:mech?mech.hp:0,score:score||0,alive:running}));}catch{}}}
+  if(!mpConnected||!Object.keys(mpPeers).length)return;
+  let _gi=0;
+  for(const _id in mpPeers){
+    const _p=mpPeers[_id];_gi++;
+    const _cx=typeof _p.x==='number'?_p.x:0;
+    const _cy=typeof _p.y==='number'?_p.y:0;
+    ctx.save();
+    ctx.globalAlpha=0.55;
+    ctx.beginPath();ctx.arc(_cx,_cy,14,0,Math.PI*2);
+    ctx.fillStyle='#10b981';ctx.fill();
+    ctx.font='bold 9px Segoe UI';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('P'+(_gi+1),_cx,_cy);
+    ctx.globalAlpha=1;
+    // HP bar
+    if(typeof _p.hp==='number'){
+      ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(_cx-14,_cy+17,28,5);
+      ctx.fillStyle='#10b981';ctx.fillRect(_cx-14,_cy+17,28*(_p.hp/100),5);
+    }
+    ctx.restore();
+  }
+};
 </script></body></html>

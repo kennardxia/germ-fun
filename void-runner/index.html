@@ -3,7 +3,8 @@
 <body>
 <div id="menu"><h1>🏃 VOID RUNNER</h1><p style="color:#64748b">Run through the void — double jump — slide — collect coins</p><div class="mrow"><div class="mcard" onclick="startGame()"><div class="mi">🎮</div><h3>Run!</h3><p>Space/W/Up = Jump, S/Down = Slide, tap on mobile</p></div></div><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <div id="hud" style="display:none"><div class="hb">Score <span class="hv" id="hS">0</span></div><div class="hb">Coins <span class="hv" id="hC">0</span></div><div class="hb">Best <span class="hv" id="hB">0</span></div></div>
-<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#38bdf8">CRASHED!</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame()">↩ Run Again</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
+<div id="gameOver"><h2 style="font-size:2.5rem;font-weight:900;color:#38bdf8">CRASHED!</h2><div style="color:#94a3b8">Score: <span id="goS" style="color:#f59e0b;font-weight:900"></span></div><button class="bigbtn" onclick="startGame()">↩ Run Again</button>
+    <button onclick="openMultiplayer()" style="background:linear-gradient(135deg,#06b6d4,#0891b2);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px">🌐 Online</button><a href="../" style="color:#475569;font-size:.82rem">← Games</a></div>
 <canvas id="c"></canvas>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
@@ -52,4 +53,59 @@ function draw(){
 }
 function loop(){if(running){try{update();}catch(e){console.error('[void-runner]',e);running=false;}}try{draw();}catch(e){console.error('[void-runner draw]',e);}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
+
+// ===== ONLINE MULTIPLAYER =====
+const MP_WORKER='https://germ-fun.kennardxia.workers.dev';const MP_GAME='voidrunner';
+let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
+function openMultiplayer(){
+  let ov=document.getElementById('mpOverlay');
+  if(!ov){
+    ov=document.createElement('div');ov.id='mpOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;backdrop-filter:blur(12px)';
+    ov.innerHTML='<h2 style="font-size:1.8rem;font-weight:900;color:#06b6d4">🌐 Online Race</h2><p style="color:#64748b">Run the void — highest score wins</p><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center"><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">Create Room</div><button onclick="mpCreate()" style="background:linear-gradient(135deg,#06b6d4,#06b6d4aa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">+ Create</button><div id="mpCode" style="margin-top:.8rem;font-size:1.6rem;font-weight:900;color:#f59e0b;letter-spacing:.2em;display:none"></div></div><div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:1.2rem;text-align:center;min-width:160px"><div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">Join Room</div><input id="mpCodeInput" maxlength="6" placeholder="XXXXXX" style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:.5rem .8rem;border-radius:8px;font-size:1rem;width:120px;text-align:center;text-transform:uppercase"><br><br><button onclick="mpJoin()" style="background:linear-gradient(135deg,#06b6d4,#06b6d4aa);border:none;color:#fff;padding:.6rem 1.4rem;border-radius:10px;font-weight:800;cursor:pointer">→ Join</button></div></div><div id="mpStatus" style="font-size:.82rem;color:#94a3b8"></div><div id="mpPlayers" style="font-size:.78rem;color:#64748b"></div><button onclick="document.getElementById(\'mpOverlay\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:.5rem 1.2rem;border-radius:10px;cursor:pointer;margin-top:.4rem">✕ Close</button>';
+    document.body.appendChild(ov);
+  }else{ov.style.display='flex';}
+}
+async function mpCreate(){
+  setMpStatus('Creating room…');
+  try{const r=await fetch(MP_WORKER+'/room/create?game='+MP_GAME,{method:'POST'});if(!r.ok)throw 0;const {code}=await r.json();document.getElementById('mpCode').textContent=code;document.getElementById('mpCode').style.display='block';setMpStatus('Share code: '+code);mpConnect(code);}catch{setMpStatus('⚠ Server unreachable. Play offline.');}
+}
+function mpJoin(){const c=(document.getElementById('mpCodeInput').value||'').trim().toUpperCase();if(c.length!==6){setMpStatus('Enter a 6-character room code');return;}mpConnect(c);}
+function mpConnect(code){
+  setMpStatus('Connecting…');
+  if(mpWs){try{mpWs.close();}catch{}}
+  try{
+    mpWs=new WebSocket(MP_WORKER.replace('https','wss')+'/room/'+code+'/ws?game='+MP_GAME);
+    mpWs.onopen=()=>setMpStatus('Connected — room '+code);
+    mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
+    mpWs.onerror=()=>setMpStatus('⚠ Connection failed');
+    mpWs.onmessage=(ev)=>{
+      let d;try{d=JSON.parse(ev.data);}catch{return;}
+      if(!d||typeof d!=='object')return;
+      if(d.type==='welcome'){mpPlayerId=d.id;mpConnected=true;setMpStatus('✓ In room — Player '+d.count);setMpPlayerCount(d.count);const ov=document.getElementById('mpOverlay');if(ov)ov.style.display='none';startGame();}
+      else if(d.type==='join'){setMpPlayerCount(d.count);}
+      else if(d.type==='leave'){delete mpPeers[d.id];}
+      else if(d.type==='state'&&d.from&&d.from!==mpPlayerId){mpPeers[d.from]={y:+d.y||0,score:+d.score||0,alive:!!d.alive};}
+    };
+  }catch{setMpStatus('⚠ WebSocket unavailable');}
+}
+function setMpStatus(m){const el=document.getElementById('mpStatus');if(el)el.textContent=m;}
+function setMpPlayerCount(n){const el=document.getElementById('mpPlayers');if(el)el.textContent='Players in room: '+n;}
+const _mpOrigdraw=draw;
+draw=function(){
+  _mpOrigdraw();
+  if(mpConnected&&mpWs&&mpWs.readyState===1){mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;try{mpWs.send(JSON.stringify({type:'state',y:player?player.y:0,vy:player?player.vy:0,score:score||0,alive:running}));}catch{}}}
+  if(!mpConnected||!Object.keys(mpPeers).length)return;
+  let _gi=0;
+  for(const _id in mpPeers){
+    const _p=mpPeers[_id];_gi++;
+    ctx.save();
+    ctx.globalAlpha=0.65;
+    ctx.fillStyle='#06b6d4';
+    ctx.fillRect(4,(_p.y||0)-8,8,16);
+    ctx.font='bold 9px Segoe UI';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('P'+(_gi+1),15,(_p.y||0));
+    ctx.globalAlpha=1;ctx.restore();
+  }
+};
 </script></body></html>
