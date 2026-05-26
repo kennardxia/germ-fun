@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--v3-->
+<!--v4-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1008,6 +1008,9 @@ draw=function(){
   mpSendTimer++;
   if(mpSendTimer>=3){mpSendTimer=0;mpSendState();}
 };
+</script>
+<script>
+(function(){function patch(el){if(el._tf)return;el._tf=1;el.addEventListener('touchend',function(e){e.preventDefault();var fn=el.getAttribute('onclick');if(fn)try{(new Function(fn))();}catch(ex){}},{passive:false});}function run(){document.querySelectorAll('.mode-card,.mcard').forEach(patch);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
 </script>
 </body>
 </html>

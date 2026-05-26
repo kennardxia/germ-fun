@@ -1,5 +1,5 @@
-﻿<!DOCTYPE html>
-<!--v3--><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Void Runner — germ.fun</title>
+<!DOCTYPE html>
+<!--v4--><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Void Runner — germ.fun</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#040616;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}canvas{display:block}#menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(56,189,248,.06) 0%,transparent 70%),#040616;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}#menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}.mcard:hover{background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3);transform:translateY(-2px)}.mrow{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}.mi{font-size:2rem;margin-bottom:.3rem}.mcard h3{font-size:.88rem;font-weight:700;color:#38bdf8}.mcard p{font-size:.72rem;color:#64748b}.bigbtn{background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;color:#fff;padding:.8rem 3rem;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}#hud{position:fixed;top:.5rem;left:.5rem;right:.5rem;display:flex;justify-content:space-between;pointer-events:none;z-index:50}.hb{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.3rem .7rem;font-size:.78rem;font-weight:700}.hv{font-size:1.1rem;font-weight:900;color:#38bdf8}#gameOver{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:90}</style></head>
 <body>
 <div id="menu"><h1>🏃 VOID RUNNER</h1><p style="color:#64748b">Run through the void — double jump — slide — collect coins</p><div class="mrow"><div class="mcard" onclick="startGame()"><div class="mi">🎮
@@ -111,4 +111,7 @@ draw=function(){
     ctx.globalAlpha=1;ctx.restore();
   }
 };
-</script></body></html>
+</script><script>
+(function(){function patch(el){if(el._tf)return;el._tf=1;el.addEventListener('touchend',function(e){e.preventDefault();var fn=el.getAttribute('onclick');if(fn)try{(new Function(fn))();}catch(ex){}},{passive:false});}function run(){document.querySelectorAll('.mode-card,.mcard').forEach(patch);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
+</script>
+</body></html>

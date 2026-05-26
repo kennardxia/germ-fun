@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--v3-->
+<!--v4-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1178,6 +1178,9 @@ updateHUD=function(){
   _mpOrig();
   if(mpConnected&&mpWs&&mpWs.readyState===1){mpSendTimer++;if(mpSendTimer>=3){mpSendTimer=0;try{mpWs.send(JSON.stringify({type:'state',x:player.x||0,y:player.y||0,z:player.z||0,hp:player.hp||0,alive:running}));}catch{}}}
 };
+</script>
+<script>
+(function(){function patch(el){if(el._tf)return;el._tf=1;el.addEventListener('touchend',function(e){e.preventDefault();var fn=el.getAttribute('onclick');if(fn)try{(new Function(fn))();}catch(ex){}},{passive:false});}function run(){document.querySelectorAll('.mode-card,.mcard').forEach(patch);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
 </script>
 </body>
 </html>

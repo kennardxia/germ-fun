@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--v3-->
+<!--v4-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -72,7 +72,6 @@ button:hover{transform:scale(1.05)}
   </div>
   <a href="../" style="color:#475569;font-size:.8rem;text-decoration:none;margin-top:.3rem">← Back to Games</a>
 </div>
-<h3>Online</h3><p>Co-op mining run</p></div>
 <div id="gameOver">
   <h2>Ship Destroyed</h2>
   <p>Credits earned: <b id="goScore">0</b></p>
@@ -501,6 +500,9 @@ draw=function(){
     _yOff+=_th+4;
   }
 };
+</script>
+<script>
+(function(){function patch(el){if(el._tf)return;el._tf=1;el.addEventListener('touchend',function(e){e.preventDefault();var fn=el.getAttribute('onclick');if(fn)try{(new Function(fn))();}catch(ex){}},{passive:false});}function run(){document.querySelectorAll('.mode-card,.mcard').forEach(patch);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
 </script>
 </body>
 </html>
