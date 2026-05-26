@@ -39,18 +39,18 @@ const GAME_LIMITS = {
 
 // Allowed message keys per game type (input messages)
 const ALLOWED_KEYS = {
-  'skywar2d':     new Set(['type','vx','vy','x','y','hp','firing','weapon','planeType','alive']),
-  'skywar3d':     new Set(['type','x','y','z','vx','vy','vz','pitch','yaw','hp','firing','weapon']),
+  'skywar2d':     new Set(['type','vx','vy','x','y','hp','firing','weapon','planeType','alive','facing']),
+  'skywar3d':     new Set(['type','x','y','z','vx','vy','vz','pitch','yaw','hp','firing','weapon','alive']),
   'neonracer':    new Set(['type','x','y','angle','speed','steer','nitro','lap','nextWP','pos']),
-  'bulletstorm':  new Set(['type','x','y','vx','vy','hp','weapon','score']),
+  'bulletstorm':  new Set(['type','x','y','z','vx','vy','hp','weapon','score','alive']),
   'gravswitch':   new Set(['type','y','vy','score','gravDir','alive']),
   'asteroidbelt': new Set(['type','x','y','vx','vy','angle','hp','score','alive']),
-  'driftking':    new Set(['type','x','y','angle','speed','drift','score','lap']),
+  'driftking':    new Set(['type','x','y','angle','speed','drift','score','lap','pos']),
   'laserbounce':  new Set(['type','x','y','aimX','aimY','score','level']),
-  'mecharena':    new Set(['type','x','y','angle','hp','weapon','score','alive']),
+  'mecharena':    new Set(['type','x','y','z','angle','hp','weapon','score','alive']),
   'pixelduel':    new Set(['type','x','y','vy','facing','hp','action','wins']),
-  'spaceminer':   new Set(['type','x','y','vx','vy','angle','hp','ore','score']),
-  'voidrunner':   new Set(['type','y','vy','score','sliding','alive']),
+  'spaceminer':   new Set(['type','x','y','vx','vy','angle','hp','ore','score','alive','credits']),
+  'voidrunner':   new Set(['type','y','vy','score','sliding','alive','lane']),
 };
 
 function generateRoomCode() {
