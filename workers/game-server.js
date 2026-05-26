@@ -1,4 +1,4 @@
-// =======================================================================
+﻿// =======================================================================
 // GERM.FUN — Multiplayer Game Server
 // Cloudflare Durable Objects + WebSocket Hibernation API
 // Free tier: 100k requests/day, 13,000 GB-s compute/day
@@ -16,6 +16,8 @@ const ALLOWED_ORIGINS = new Set([
   'https://germ.fun',
   'https://www.germ.fun',
   'https://germ-fun.kennardxia.workers.dev',
+  'http://localhost:8787',
+  'http://127.0.0.1:8787',
 ]);
 
 // Per-game position/velocity clamp limits (anti-cheat)
@@ -39,7 +41,7 @@ const GAME_LIMITS = {
 const ALLOWED_KEYS = {
   'skywar2d':     new Set(['type','vx','vy','x','y','hp','firing','weapon','planeType','alive']),
   'skywar3d':     new Set(['type','x','y','z','vx','vy','vz','pitch','yaw','hp','firing','weapon']),
-  'neonracer':    new Set(['type','x','y','angle','speed','steer','nitro','lap','nextWP']),
+  'neonracer':    new Set(['type','x','y','angle','speed','steer','nitro','lap','nextWP','pos']),
   'bulletstorm':  new Set(['type','x','y','vx','vy','hp','weapon','score']),
   'gravswitch':   new Set(['type','y','vy','score','gravDir','alive']),
   'asteroidbelt': new Set(['type','x','y','vx','vy','angle','hp','score','alive']),

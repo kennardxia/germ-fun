@@ -7,8 +7,8 @@
 <title>Bullet Storm 3D — germ.fun</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-canvas{display:block;touch-action:none}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}
+canvas{display:block;touch-action:none;width:100vw;height:100vh}
 #menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(244,114,182,.08) 0%,transparent 70%),#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.3rem;z-index:100}
 #menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
 .mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.1rem 1.6rem;cursor:pointer;transition:.18s;text-align:center;min-width:140px}
@@ -445,7 +445,7 @@ function loop(){
 requestAnimationFrame(loop);
 
 // ===== ONLINE MULTIPLAYER =====
-const MP_WORKER='https://germ-fun.kennardxia.workers.dev';const MP_GAME='bulletstorm';
+const MP_WORKER=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://germ-fun.kennardxia.workers.dev';const MP_GAME='bulletstorm';
 let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
 function openMultiplayer(){
   let ov=document.getElementById('mpOverlay');
@@ -465,7 +465,7 @@ function mpConnect(code){
   setMpStatus('Connecting…');
   if(mpWs){try{mpWs.close();}catch{}}
   try{
-    mpWs=new WebSocket(MP_WORKER.replace('https','wss')+'/room/'+code+'/ws?game='+MP_GAME);
+    mpWs=new WebSocket(MP_WORKER.replace(/^https?/,m=>m==='https'?'wss':'ws')+'/room/'+code+'/ws?game='+MP_GAME);
     mpWs.onopen=()=>setMpStatus('Connected — room '+code);
     mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
     mpWs.onerror=()=>setMpStatus('⚠ Connection failed');

@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!--v4-->
+<!--v5-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,8 +7,8 @@
 <title>Neon Racer 3D — germ.fun</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-canvas{display:block;touch-action:none;image-rendering:pixelated}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100dvh}
+canvas{display:block;touch-action:none;image-rendering:pixelated;width:100vw;height:100vh}
 #menu{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(6,182,212,.08) 0%,transparent 70%),#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;z-index:100}
 #menu h1{font-size:clamp(2rem,6vw,4rem);font-weight:900;background:linear-gradient(135deg,#06b6d4,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.4rem;cursor:pointer;transition:.18s;text-align:center;min-width:130px}
@@ -59,7 +59,6 @@ canvas{display:block;touch-action:none;image-rendering:pixelated}
   <a href="../" style="color:#475569;font-size:.82rem">← Games</a>
   <a href="../neon-racer-2d/" style="color:#475569;font-size:.78rem">Play 2D version</a>
 </div>
-    <div class="mcard" onclick="openMultiplayer()" style="border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.07)"><div class="mi">🌐</div><h3>Online</h3><p>Race head-to-head</p></div>
 
 <div id="hud" style="display:none">
   <div class="hb">Lap <span class="hv" id="hLap">1/3</span></div>
@@ -244,6 +243,7 @@ function draw3D(){
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   // Ground
   ctx.fillStyle='#060414';ctx.fillRect(0,H*.5,W,H*.5);
+  if(!player||!track)return;
 
   const totalLen=track.length*SEG_H;
   let curveAcc=0;
@@ -353,7 +353,7 @@ function loop(){
 requestAnimationFrame(loop);
 
 // ===== ONLINE MULTIPLAYER =====
-const MP_WORKER='https://germ-fun.kennardxia.workers.dev';const MP_GAME='neonracer';
+const MP_WORKER=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://germ-fun.kennardxia.workers.dev';const MP_GAME='neonracer';
 let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
 function openMultiplayer(){
   let ov=document.getElementById('mpOverlay');
@@ -373,7 +373,7 @@ function mpConnect(code){
   setMpStatus('Connecting…');
   if(mpWs){try{mpWs.close();}catch{}}
   try{
-    mpWs=new WebSocket(MP_WORKER.replace('https','wss')+'/room/'+code+'/ws?game='+MP_GAME);
+    mpWs=new WebSocket(MP_WORKER.replace(/^https?/,m=>m==='https'?'wss':'ws')+'/room/'+code+'/ws?game='+MP_GAME);
     mpWs.onopen=()=>setMpStatus('Connected — room '+code);
     mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
     mpWs.onerror=()=>setMpStatus('⚠ Connection failed');

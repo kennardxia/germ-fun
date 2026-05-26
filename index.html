@@ -855,6 +855,8 @@ window.addEventListener('load',()=>{
 function filterGames(cat){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   event.target.classList.add('active');
+  const titles={'all':'All Games','action':'Action Games','racing':'Racing Games','survival':'Survival Games','2d':'2D Games','3d':'3D Games','coming':'Coming Soon'};
+  document.querySelector('.section-title').textContent='\u2756 '+(titles[cat]||'All Games');
   document.querySelectorAll('.game-card').forEach(c=>{
     if(cat==='all')c.style.display='';
     else if(cat==='coming')c.style.display=c.classList.contains('coming-soon')?'':'none';

@@ -508,7 +508,7 @@ function loop(){
 if(typeof loopStarted==='undefined'){var loopStarted=true;requestAnimationFrame(loop);}
 
 // ===== ONLINE MULTIPLAYER =====
-const MP_WORKER='https://germ-fun.kennardxia.workers.dev';
+const MP_WORKER=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://germ-fun.kennardxia.workers.dev';
 const MP_GAME='neonracer';
 let mpWs=null,mpPlayerId=null,mpPeers={},mpConnected=false,mpSendTimer=0;
 function openMultiplayer(){
@@ -529,7 +529,7 @@ function mpJoin(){const c=document.getElementById('mpCodeInput').value.trim().to
 function mpConnect(code){
   setMpStatus('Connecting…');
   if(mpWs){mpWs.close();}
-  try{mpWs=new WebSocket(`${MP_WORKER.replace('https','wss')}/room/${code}/ws?game=${MP_GAME}`);
+  try{mpWs=new WebSocket(`${MP_WORKER.replace(/^https?/,m=>m==='https'?'wss':'ws')}/room/${code}/ws?game=${MP_GAME}`);
     mpWs.onopen=()=>setMpStatus('Connected to '+code);
     mpWs.onclose=()=>{mpConnected=false;mpWs=null;mpPeers={};setMpStatus('Disconnected');};
     mpWs.onerror=()=>setMpStatus('⚠ Connection failed');

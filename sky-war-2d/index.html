@@ -881,7 +881,7 @@ function loop(){
 if(typeof loopStarted==='undefined'){var loopStarted=true;requestAnimationFrame(loop);}
 
 // ===== ONLINE MULTIPLAYER =====
-const MP_WORKER = 'https://germ-fun.kennardxia.workers.dev';
+const MP_WORKER=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?location.origin:'https://germ-fun.kennardxia.workers.dev';
 const MP_GAME = 'skywar2d';
 let mpWs = null;
 let mpPlayerId = null;
@@ -918,7 +918,7 @@ function mpJoin(){
 function mpConnect(code){
   setMpStatus('Connecting…');
   if(mpWs){mpWs.close();mpWs=null;}
-  const url=`${MP_WORKER.replace('https','wss')}/room/${code}/ws?game=${MP_GAME}`;
+  const url=`${MP_WORKER.replace(/^https?/,m=>m==='https'?'wss':'ws')}/room/${code}/ws?game=${MP_GAME}`;
   try{
     mpWs=new WebSocket(url);
     mpWs.onopen=()=>setMpStatus('Connected to room '+code);
