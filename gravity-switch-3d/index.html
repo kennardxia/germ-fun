@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!--v4-->
 <html lang="en">
 <head>
@@ -385,7 +385,7 @@ draw=function(){
 };
 </script>
 <script>
-(function(){function patch(el){if(el._tf)return;el._tf=1;el.addEventListener('touchend',function(e){e.preventDefault();var fn=el.getAttribute('onclick');if(fn)try{(new Function(fn))();}catch(ex){}},{passive:false});}function run(){document.querySelectorAll('.mode-card,.mcard').forEach(patch);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
+(function(){var s=document.createElement('style');s.textContent='.mode-card,.mcard,button{touch-action:manipulation}';(document.head||document.documentElement).appendChild(s);function patch(el){if(el._tf)return;el._tf=1;el.addEventListener('touchend',function(e){if(e.cancelable)e.preventDefault();el.click();},{passive:false});}function run(){document.querySelectorAll('.mode-card,.mcard,button').forEach(patch);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();new MutationObserver(function(muts){muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType!==1)return;try{if(n.matches('.mode-card,.mcard,button'))patch(n);n.querySelectorAll('.mode-card,.mcard,button').forEach(patch);}catch(ex){}});});}).observe(document.documentElement,{childList:true,subtree:true});})();
 </script>
 </body>
 </html>

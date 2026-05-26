@@ -125,6 +125,8 @@ footer strong{color:var(--text)}
   <button class="filter-btn" onclick="filterGames('action')">Action</button>
   <button class="filter-btn" onclick="filterGames('racing')">Racing</button>
   <button class="filter-btn" onclick="filterGames('survival')">Survival</button>
+  <button class="filter-btn" onclick="filterGames('2d')">2D Games</button>
+  <button class="filter-btn" onclick="filterGames('3d')">3D Games</button>
   <button class="filter-btn" onclick="filterGames('coming')">Coming Soon</button>
 </div>
 
@@ -133,7 +135,7 @@ footer strong{color:var(--text)}
   <div class="games-grid" id="gamesGrid">
 
     <!-- SKY WAR 3D -->
-    <a class="game-card featured" href="sky-war-3d/index.html" data-cat="action">
+    <a class="game-card featured" href="sky-war-3d/index.html" data-cat="action" data-dim="3d">
       <div class="card-preview tall">
         <canvas id="cv0"></canvas>
       </div>
@@ -149,7 +151,7 @@ footer strong{color:var(--text)}
     </a>
 
     <!-- BULLET STORM -->
-    <a class="game-card" href="bullet-storm/index.html" data-cat="action">
+    <a class="game-card" href="bullet-storm/index.html" data-cat="action" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv1"></canvas>
       </div>
@@ -165,12 +167,12 @@ footer strong{color:var(--text)}
     </a>
 
     <!-- NEON RACER -->
-    <a class="game-card" href="neon-racer-2d/index.html" data-cat="racing">
+    <a class="game-card" href="neon-racer-2d/index.html" data-cat="racing" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv2"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag multi">2 Player</span><span class="tag">Racing</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag multi">2 Player</span><span class="tag">Racing</span></div>
         <div class="card-title">Neon Racer</div>
         <div class="card-desc">High-speed neon drift racing. 1v1 local multiplayer, 4 tracks, turbo boost, nitrous system and lap records.</div>
         <div class="card-footer">
@@ -181,12 +183,12 @@ footer strong{color:var(--text)}
     </a>
 
     <!-- GRAVITY SWITCH -->
-    <a class="game-card" href="gravity-switch/index.html" data-cat="survival">
+    <a class="game-card" href="gravity-switch/index.html" data-cat="survival" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv3"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag new">NEW</span><span class="tag">Infinite</span><span class="tag">Survival</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag new">NEW</span><span class="tag">Infinite</span><span class="tag">Survival</span></div>
         <div class="card-title">Gravity Switch</div>
         <div class="card-desc">Flip gravity to survive an endless neon corridor. Collect coins, unlock skins, dodge increasingly brutal obstacles.</div>
         <div class="card-footer">
@@ -197,12 +199,12 @@ footer strong{color:var(--text)}
     </a>
 
     <!-- SKY WAR 2D -->
-    <a class="game-card" href="sky-war-2d/index.html" data-cat="action">
+    <a class="game-card" href="sky-war-2d/index.html" data-cat="action" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv4"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag multi">2 Player</span><span class="tag">Action</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag multi">2 Player</span><span class="tag">Action</span></div>
         <div class="card-title">Sky War 2D</div>
         <div class="card-desc">Classic 2D dogfight â€” 1v1 local battle with 5 plane types, special moves, and weapon pickups.</div>
         <div class="card-footer">
@@ -212,12 +214,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- DRIFT KING --><a class="game-card" href="drift-king/index.html" data-cat="racing">
+    <!-- DRIFT KING --><a class="game-card" href="drift-king/index.html" data-cat="racing" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv5"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag">Racing</span><span class="tag">Drift</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag">Racing</span><span class="tag">Drift</span></div>
         <div class="card-title">Drift King</div>
         <div class="card-desc">Master the art of drifting on technical mountain circuits. Style points, car tuning, and online leaderboards.</div>
         <div class="card-footer">
@@ -227,12 +229,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- SPACE MINER --><a class="game-card" href="space-miner/index.html" data-cat="action">
+    <!-- SPACE MINER --><a class="game-card" href="space-miner/index.html" data-cat="action" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv6"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag">Strategy</span><span class="tag">Space</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag">Strategy</span><span class="tag">Space</span></div>
         <div class="card-title">Space Miner</div>
         <div class="card-desc">Mine asteroids, build your space station, defend against alien raids. Deep resource management meets action.</div>
         <div class="card-footer">
@@ -242,12 +244,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- VOID RUNNER --><a class="game-card" href="void-runner/index.html" data-cat="runner">
+    <!-- VOID RUNNER --><a class="game-card" href="void-runner/index.html" data-cat="runner" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv7"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag">Platformer</span><span class="tag">Survival</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag">Platformer</span><span class="tag">Survival</span></div>
         <div class="card-title">Void Runner</div>
         <div class="card-desc">Parkour through a collapsing void dimension. Wall jumps, dash moves, procedural level generation.</div>
         <div class="card-footer">
@@ -257,12 +259,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- MECH ARENA --><a class="game-card" href="mech-arena/index.html" data-cat="action">
+    <!-- MECH ARENA --><a class="game-card" href="mech-arena/index.html" data-cat="action" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv8"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag">Action</span><span class="tag">Arena</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag">Action</span><span class="tag">Arena</span></div>
         <div class="card-title">Mech Arena</div>
         <div class="card-desc">Giant mechs battle in a futuristic arena. Customize loadout, manage heat systems, destroy opponents.</div>
         <div class="card-footer">
@@ -272,12 +274,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- PIXEL DUEL --><a class="game-card" href="pixel-duel/index.html" data-cat="action">
+    <!-- PIXEL DUEL --><a class="game-card" href="pixel-duel/index.html" data-cat="action" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv9"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag multi">2 Player</span><span class="tag">Fighting</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag multi">2 Player</span><span class="tag">Fighting</span></div>
         <div class="card-title">Pixel Duel</div>
         <div class="card-desc">1v1 pixel fighter with combo system, 12 characters, and special moves. Local versus battle.</div>
         <div class="card-footer">
@@ -287,12 +289,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- LASER BOUNCE --><a class="game-card" href="laser-bounce/index.html" data-cat="puzzle">
+    <!-- LASER BOUNCE --><a class="game-card" href="laser-bounce/index.html" data-cat="puzzle" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv10"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag">Puzzle</span><span class="tag">Arcade</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag">Puzzle</span><span class="tag">Arcade</span></div>
         <div class="card-title">Laser Bounce</div>
         <div class="card-desc">Aim laser beams off mirrors to obliterate targets. 80 puzzle levels with increasing complexity.</div>
         <div class="card-footer">
@@ -302,12 +304,12 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- ASTEROID BELT --><a class="game-card" href="asteroid-belt/index.html" data-cat="action">
+    <!-- ASTEROID BELT --><a class="game-card" href="asteroid-belt/index.html" data-cat="action" data-dim="2d">
       <div class="card-preview">
         <canvas id="cv11"></canvas>
       </div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag">Shooter</span><span class="tag">Survival</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag">Shooter</span><span class="tag">Survival</span></div>
         <div class="card-title">Asteroid Belt</div>
         <div class="card-desc">Navigate through a deadly asteroid field. Mine resources, upgrade shields, survive the belt.</div>
         <div class="card-footer">
@@ -316,17 +318,17 @@ footer strong{color:var(--text)}
         </div>
       </div>
     </a>
-    <!-- ASTEROID BELT 3D --><a class="game-card" href="asteroid-belt-3d/index.html" data-cat="action">
+    <!-- ASTEROID BELT 3D --><a class="game-card" href="asteroid-belt-3d/index.html" data-cat="action" data-dim="3d">
       <div class="card-preview"><canvas id="cv12"></canvas></div>
       <div class="card-body">
-        <div class="card-tags"><span class="tag new">3D</span><span class="tag">Shooter</span><span class="tag">Survival</span></div>
+        <div class="card-tags"><span class="tag" style="background:rgba(245,158,11,.15);color:#fbbf24">2D</span><span class="tag new">3D</span><span class="tag">Shooter</span><span class="tag">Survival</span></div>
         <div class="card-title">Asteroid Belt 3D</div>
         <div class="card-desc">Full 3D asteroid field. Perspective projection combat, alien ships, 4 weapon types.</div>
         <div class="card-footer"><div class="card-rating">&#9733;&#9733;&#9733;&#9733;&#9733; <span>(5.0)</span></div><div class="card-play">&#9654; Play &rarr;</div></div>
       </div>
     </a>
 
-    <!-- DRIFT KING 3D --><a class="game-card" href="drift-king-3d/index.html" data-cat="racing">
+    <!-- DRIFT KING 3D --><a class="game-card" href="drift-king-3d/index.html" data-cat="racing" data-dim="3d">
       <div class="card-preview"><canvas id="cv13"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Racing</span><span class="tag">Drift</span></div>
@@ -336,7 +338,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- LASER BOUNCE 3D --><a class="game-card" href="laser-bounce-3d/index.html" data-cat="puzzle">
+    <!-- LASER BOUNCE 3D --><a class="game-card" href="laser-bounce-3d/index.html" data-cat="puzzle" data-dim="3d">
       <div class="card-preview"><canvas id="cv14"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Puzzle</span></div>
@@ -346,7 +348,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- MECH ARENA 3D --><a class="game-card" href="mech-arena-3d/index.html" data-cat="action">
+    <!-- MECH ARENA 3D --><a class="game-card" href="mech-arena-3d/index.html" data-cat="action" data-dim="3d">
       <div class="card-preview"><canvas id="cv15"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Action</span><span class="tag">Arena</span></div>
@@ -356,7 +358,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- PIXEL DUEL 3D --><a class="game-card" href="pixel-duel-3d/index.html" data-cat="action">
+    <!-- PIXEL DUEL 3D --><a class="game-card" href="pixel-duel-3d/index.html" data-cat="action" data-dim="3d">
       <div class="card-preview"><canvas id="cv16"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag multi">2 Player</span><span class="tag">Fighting</span></div>
@@ -366,7 +368,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- SPACE MINER 3D --><a class="game-card" href="space-miner-3d/index.html" data-cat="action">
+    <!-- SPACE MINER 3D --><a class="game-card" href="space-miner-3d/index.html" data-cat="action" data-dim="3d">
       <div class="card-preview"><canvas id="cv17"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Strategy</span><span class="tag">Space</span></div>
@@ -376,7 +378,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- VOID RUNNER 3D --><a class="game-card" href="void-runner-3d/index.html" data-cat="runner">
+    <!-- VOID RUNNER 3D --><a class="game-card" href="void-runner-3d/index.html" data-cat="runner" data-dim="3d">
       <div class="card-preview"><canvas id="cv18"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Platformer</span><span class="tag">Survival</span></div>
@@ -386,7 +388,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- BULLET STORM 3D --><a class="game-card" href="bullet-storm-3d/index.html" data-cat="action">
+    <!-- BULLET STORM 3D --><a class="game-card" href="bullet-storm-3d/index.html" data-cat="action" data-dim="3d">
       <div class="card-preview"><canvas id="cv19"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag hot">&#128293; HOT</span><span class="tag">Shooter</span></div>
@@ -396,7 +398,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- NEON RACER 3D --><a class="game-card" href="neon-racer-3d/index.html" data-cat="racing">
+    <!-- NEON RACER 3D --><a class="game-card" href="neon-racer-3d/index.html" data-cat="racing" data-dim="3d">
       <div class="card-preview"><canvas id="cv20"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Racing</span></div>
@@ -406,7 +408,7 @@ footer strong{color:var(--text)}
       </div>
     </a>
 
-    <!-- GRAVITY SWITCH 3D --><a class="game-card" href="gravity-switch-3d/index.html" data-cat="survival">
+    <!-- GRAVITY SWITCH 3D --><a class="game-card" href="gravity-switch-3d/index.html" data-cat="survival" data-dim="3d">
       <div class="card-preview"><canvas id="cv21"></canvas></div>
       <div class="card-body">
         <div class="card-tags"><span class="tag new">3D</span><span class="tag">Survival</span><span class="tag">Infinite</span></div>
@@ -856,6 +858,7 @@ function filterGames(cat){
   document.querySelectorAll('.game-card').forEach(c=>{
     if(cat==='all')c.style.display='';
     else if(cat==='coming')c.style.display=c.classList.contains('coming-soon')?'':'none';
+    else if(cat==='2d'||cat==='3d')c.style.display=(!c.classList.contains('coming-soon')&&c.dataset.dim===cat)?'':'none';
     else c.style.display=(!c.classList.contains('coming-soon')&&c.dataset.cat===cat)?'':'none';
   });
 }
